@@ -1,4 +1,4 @@
-# Session02 - dbt Project Structure, Sources & Models
+# Lesson 1 - dbt Project Structure, Sources & Models
 
 In this lab, you will explore the capabilities of the dbt Cloud IDE, you will define sources for your dbt project and create your first models, test them and document them. 
 
@@ -23,7 +23,7 @@ The File Explorer menu is quite self-explanatory, but there are some lesser-know
 For bigger projects with hundreds or even thousands of models, it might get difficult to navigate to the model you need by going through the project's folder structure. In such cases, you can use the magnifying glass button to search for the model by its name.
 
 
-### Working with the code editor
+### Working with the code editor
 
 Open any model from the File Explorer and add the following comment to it:
 
