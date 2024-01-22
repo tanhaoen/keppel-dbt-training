@@ -45,6 +45,11 @@ One of the benefits of working in the dbt Cloud IDE is the abundance of autocomp
 Once you do that, you will be presented with the option of choosing a template for some commonly used Jinja functions and code blocks such as `{{ ref() }}`, `{{ source() }}`, `{% for item in list %}`.
 
 
+## Create a branch
+
+Create a branch in your IDE following this naming convention: `lab-1-<your name>` (e.g. lab-1-jingyu)
+
+
 ## Defining sources
 
 [Add sources to your DAG](https://docs.getdbt.com/docs/build/sources)
@@ -78,12 +83,12 @@ If your sources were defined correctly, your terminal's output should resemble t
 
 Now that you have your sources defined, it's time to create your first models:
 
-* `STG_ORDERS_<YOUR NAME>` (e.g. STG_ORDERS_JINGYU)
-* `STG_CUSTOMERS_<YOUR NAME>` (e.g. STG_CUSTOMERS_JINGYU)
+* `STG_ORDERS`
+* `STG_CUSTOMERS` 
 
 For your convenience, the SQL for the models have been provided:
 
-**`STG_ORDERS_<YOUR NAME>`**
+**`STG_ORDERS`**
 ```
 with orders as (
     select * from {{ source('snowflake_sample', 'orders') }}
@@ -107,7 +112,7 @@ with orders as (
 select * from final
 ```
 
-**`STG_CUSTOMERS_<YOUR NAME>`**
+**`STG_CUSTOMERS`**
 ```
 with customers as (
     select * from {{ source('snowflake_sample', 'customer') }}
@@ -141,10 +146,10 @@ This will compile the SQL for all .sql files in the `models` folder. You should 
 
 In case you want to compile the SQL for only one or a select few of your models, you can use the `--select` flag with the above command. For example:
 ```
-dbt compile --select STG_ORDERS_<YOUR NAME>
+dbt compile --select stg_orders
 ```
 
-The above command will only compile the SQL for the `STG_ORDERS_<YOUR NAME>` models.
+The above command will only compile the SQL for the `STG_ORDERS` models.
 
 ## Running your models
 
@@ -153,15 +158,15 @@ The above command will only compile the SQL for the `STG_ORDERS_<YOUR NAME>` mod
 Once your models have been created, you need to run them in order to materialize them in Snowflake. To do this, you need to use the `dbt run` command. Similarly to the `dbt compile` command, you can optionally use the `--select` flag to specify the model(s) you want to build. Let's execute this command first:
 
 ```
-dbt run --select STG_ORDERS_<YOUR NAME>
+dbt run --select stg_orders
 ```
 
-Now, go to Snowflake and make sure you're using the `DBT_TRAIN_ROLE` role. Expand the objects under your `DBT_TRAIN_DB` database and you should see a new schema corresponding to what you indicated in "Schema" in your credentials page. Expand the schema and you should see `STG_ORDERS_<YOUR NAME>`.
+Now, go to Snowflake and make sure you're using the `DBT_TRAIN_ROLE` role. Expand the objects under your `DBT_TRAIN_DB` database and you should see a new schema corresponding to what you indicated in "Schema" in your credentials page. Expand the schema and you should see `STG_ORDERS`.
 
-Now, you need to run the rest of the models. You could simply run `dbt run` to run all models in the `models` folder, but `STG_ORDERS_<YOUR NAME>` has already been materialized, so there is no point in spending resources in order to rebuild it. Instead, let's run everything except for it:
+Now, you need to run the rest of the models. You could simply run `dbt run` to run all models in the `models` folder, but `STG_ORDERS` has already been materialized, so there is no point in spending resources in order to rebuild it. Instead, let's run everything except for it:
 
 ```
-dbt run --exclude STG_ORDERS_<YOUR NAME>
+dbt run --exclude stg_orders
 ```
 
 Now, all of your staging models should be materialized as tables in Snowflake. The tables should appear in your data warehouse.
@@ -170,17 +175,19 @@ Now, all of your staging models should be materialized as tables in Snowflake. T
 
 [About ref function](https://docs.getdbt.com/reference/dbt-jinja-functions/ref)
 
-Now, it's time to create more complex models that convey meaningful information to the business. You are tasked with creating a `FCT_ORDERS_<YOUR NAME>` model with the following columns:
+Now, it's time to create more complex models that convey meaningful information to the business. You are tasked with creating a `FCT_ORDERS` model with the following columns:
 
-    * All columns from `STG_ORDERS_<YOUR NAME>`
-    * `CUSTOMER_NAME`
-    * `CUSTOMER_MKT_SEGMENT`
+* All columns from `STG_ORDERS`
+* `CUSTOMER_NAME`
+* `CUSTOMER_MKT_SEGMENT`
 
 **Hint:** To do this, you need to join the 2 tables created earlier together.
 
 
 ## Committing and pushing your changes
 
-Now that you have completed your tasks, it's time to commit your changes. 
+Now that you have completed your tasks, it's time to commit and push your changes! 
+
+**Note:** You should be able to see your branch and commits in your repository once you have pushed your changes. However, please **do not merge the branch with the main branch for now**!
 
 Congratulations! You have completed this Lab successfully.
