@@ -64,10 +64,7 @@ dbt ls
 If your sources were defined correctly, your terminal's output should resemble the output below:
 
 ```
-07:52:55 Found 3 models, 3 sources, 0 exposures, 0 metrics, 430 macros, 0 groups, 0 semantic models
-07:52:55 my_new_project.fct_orders
-07:52:55 my_new_project.stg_customers
-07:52:55 my_new_project.stg_orders
+07:52:55 Found 0 models, 3 sources, 0 exposures, 0 metrics, 430 macros, 0 groups, 0 semantic models
 07:52:55 source:my_new_project.snowflake_sample.customer
 07:52:55 source:my_new_project.snowflake_sample.lineitem
 07:52:55 source:my_new_project.snowflake_sample.orders
@@ -86,7 +83,7 @@ Now that you have your sources defined, it's time to create your first models:
 
 For your convenience, the SQL for the models have been provided:
 
-**STG_ORDERS**
+**`STG_ORDERS_<YOUR NAME>`**
 ```
 with orders as (
     select * from {{ source('snowflake_sample', 'orders') }}
@@ -110,7 +107,7 @@ with orders as (
 select * from final
 ```
 
-**STG_CUSTOMERS**
+**`STG_CUSTOMERS_<YOUR NAME>`**
 ```
 with customers as (
     select * from {{ source('snowflake_sample', 'customer') }}
@@ -144,10 +141,10 @@ This will compile the SQL for all .sql files in the `models` folder. You should 
 
 In case you want to compile the SQL for only one or a select few of your models, you can use the `--select` flag with the above command. For example:
 ```
-dbt compile --select stg_orders
+dbt compile --select STG_ORDERS_<YOUR NAME>
 ```
 
-The above command will only compile the SQL for the `stg_orders` models.
+The above command will only compile the SQL for the `STG_ORDERS_<YOUR NAME>` models.
 
 ## Running your models
 
@@ -156,15 +153,15 @@ The above command will only compile the SQL for the `stg_orders` models.
 Once your models have been created, you need to run them in order to materialize them in Snowflake. To do this, you need to use the `dbt run` command. Similarly to the `dbt compile` command, you can optionally use the `--select` flag to specify the model(s) you want to build. Let's execute this command first:
 
 ```
-dbt run --select stg_orders
+dbt run --select STG_ORDERS_<YOUR NAME>
 ```
 
-Now, go to Snowflake and make sure you're using the `DBT_TRAIN_ROLE` role. Expand the objects under your `DBT_TRAIN_DB` database and you should see a new schema corresponding to what you indicated in "Schema" in your credentials page. Expand the schema and you should see `STG_ORDERS`.
+Now, go to Snowflake and make sure you're using the `DBT_TRAIN_ROLE` role. Expand the objects under your `DBT_TRAIN_DB` database and you should see a new schema corresponding to what you indicated in "Schema" in your credentials page. Expand the schema and you should see `STG_ORDERS_<YOUR NAME>`.
 
-Now, you need to run the rest of the models. You could simply run `dbt run` to run all models in the `models` folder, but `stg_orders` has already been materialized, so there is no point in spending resources in order to rebuild it. Instead, let's run everything except for it:
+Now, you need to run the rest of the models. You could simply run `dbt run` to run all models in the `models` folder, but `STG_ORDERS_<YOUR NAME>` has already been materialized, so there is no point in spending resources in order to rebuild it. Instead, let's run everything except for it:
 
 ```
-dbt run --exclude stg_orders
+dbt run --exclude STG_ORDERS_<YOUR NAME>
 ```
 
 Now, all of your staging models should be materialized as tables in Snowflake. The tables should appear in your data warehouse.
@@ -173,8 +170,9 @@ Now, all of your staging models should be materialized as tables in Snowflake. T
 
 [About ref function](https://docs.getdbt.com/reference/dbt-jinja-functions/ref)
 
-Now, it's time to create more complex models that convey meaningful information to the business. You are tasked with creating a `FCT_ORDERS` model with the following columns:
-    * All columns from `STG_ORDERS`
+Now, it's time to create more complex models that convey meaningful information to the business. You are tasked with creating a `FCT_ORDERS_<YOUR NAME>` model with the following columns:
+
+    * All columns from `STG_ORDERS_<YOUR NAME>`
     * `CUSTOMER_NAME`
     * `CUSTOMER_MKT_SEGMENT`
 
@@ -183,7 +181,6 @@ Now, it's time to create more complex models that convey meaningful information 
 
 ## Committing and pushing your changes
 
-Now that you have completed your tasks, it's time to commit your changes.
-    ```
+Now that you have completed your tasks, it's time to commit your changes. 
 
 Congratulations! You have completed this Lab successfully.
