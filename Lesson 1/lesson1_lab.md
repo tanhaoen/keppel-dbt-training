@@ -22,6 +22,7 @@ The File Explorer menu is quite self-explanatory, but there are some lesser-know
 
 For bigger projects with hundreds or even thousands of models, it might get difficult to navigate to the model you need by going through the project's folder structure. In such cases, you can use the magnifying glass button to search for the model by its name.
 
+
 ### Working with the code editor
 
 Open any model from the File Explorer and add the following comment to it:
@@ -166,9 +167,7 @@ Now, you need to run the rest of the models. You could simply run `dbt run` to r
 dbt run --exclude stg_orders
 ```
 
-Now, all of your staging models should be materialized as tables in Snowflake. The tables should appear in your data warehouse as shown below:
-
-![staging models in Snowlfake](./images/stg_structure.png)
+Now, all of your staging models should be materialized as tables in Snowflake. The tables should appear in your data warehouse.
 
 ## Referencing other models
 
