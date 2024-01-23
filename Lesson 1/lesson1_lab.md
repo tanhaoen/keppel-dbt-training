@@ -54,13 +54,27 @@ Create a branch in your IDE following this naming convention: `lab-1-<your name>
 
 [Add sources to your DAG](https://docs.getdbt.com/docs/build/sources)
 
-You should be able to access the Snowflake Sample Datasets in the `SNOWFLAKE_SAMPLE_DATA` database and `TPCH_SF1` schema, which contains these tables:
+You should be able to access the Snowflake Sample Datasets in the `DBT_TRAIN_DB` database and `DBT_TRAIN_JAFFLE_SHOP` schema, which contains these tables:
 
-* `ORDERS`
-* `LINEITEM`
-* `CUSTOMERS`
+* `RAW_ORDERS`
+* `RAW_CUSTOMERS`
+* `RAW_PAYMENTS`
 
 Your task is to define a single dbt Source named `snowflake_sample` that allows you to select from each table using the `{{ source() }}` function. Consult the [dbt documentation](https://docs.getdbt.com/docs/build/sources#declaring-a-source) in case you need a refresher on how sources are declared.
+
+```
+version: 2
+
+sources:
+  - name: snowflake_sample
+    database: DBT_TRAIN_DB
+    schema: DBT_TRAIN_JAFFLE_SHOP
+
+    tables:
+      - name: RAW_ORDERS 
+      - name: RAW_PAYMENTS
+      - name: RAW_CUSTOMERS
+```
 
 Once you are finished with the source definitions, test if dbt detects them properly. To do this, execute the following command in your terminal:
 ```
@@ -91,22 +105,11 @@ For your convenience, the SQL for the models have been provided:
 **`STG_ORDERS`**
 ```
 with orders as (
-    select * from {{ source('snowflake_sample', 'orders') }}
+    select * from {{ source('snowflake_sample', 'raw_orders') }}
 )
 
 , final as (
-    select 
-        o_orderkey as order_key
-        , o_custkey as customer_key
-        , o_orderstatus as order_status
-        , o_totalprice as total_price
-        , o_orderdate as order_date 
-        , o_orderpriority as order_priority
-        , o_clerk as clerk 
-        , o_shippriority as ship_priority
-        , o_comment as comment
- 
-    from orders
+    select * from orders
 )
 
 select * from final
@@ -115,18 +118,11 @@ select * from final
 **`STG_CUSTOMERS`**
 ```
 with customers as (
-    select * from {{ source('snowflake_sample', 'customer') }}
+    select * from {{ source('snowflake_sample', 'raw_customers') }}
 )
 
 , final as (
-    select 
-        c_custkey as customer_key 
-        , c_name as customer_name
-        , c_nationkey as nation_key 
-        , c_mktsegment as marketing_segment
-        , c_comment as comment 
-
-    from customers 
+    select * from customers 
 )
 
 select * from final
@@ -175,11 +171,7 @@ Now, all of your staging models should be materialized as tables in Snowflake. T
 
 [About ref function](https://docs.getdbt.com/reference/dbt-jinja-functions/ref)
 
-Now, it's time to create more complex models that convey meaningful information to the business. You are tasked with creating a `FCT_ORDERS` model with the following columns:
-
-* All columns from `STG_ORDERS`
-* `CUSTOMER_NAME`
-* `CUSTOMER_MKT_SEGMENT`
+Now, it's time to create more complex models that convey meaningful information to the business. You are tasked with creating a `FCT_ORDERS` model with all columns from `STG_ORDERS` and `STG_CUSTOMERS`.
 
 **Hint:** To do this, you need to join the 2 tables created earlier together.
 
