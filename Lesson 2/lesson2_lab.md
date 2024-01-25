@@ -1,15 +1,34 @@
-# Lesson 2 - Familiarising yourself with Jinja and Macros
+# Lesson 2 - Project Structure, Jinja and Macros
 
-In this lab, you will first create a staging model, `STG_PAYMENTS`. After that, you will create another dbt model that will be written in Jinja. 
+In this lab, you will create new models in your project. After that, you will create another dbt model that will be written in Jinja. 
 
 **Note:** Each dbt-focused section of this lab is accompanied by a link to documentation (highlighted with blue text) that can help you complete your task. You are encouraged to go through it even if you have been able to complete your assignment without it.
 
-## Creating a staging model
-Create a `STG_PAYMENTS` model in your project, which reads from `RAW_PAYMENTS`. Try to use CTEs as described in dbt Labs' [style guide](https://github.com/dbt-labs/corp/blob/main/dbt_style_guide.md#example-sql-with-ctes).
 
-Also, make sure you add it into the correct subdirectory in `models`.
+## Create a staging model
+Create a `STG_PAYMENTS` model in your project, which reads from `RAW_PAYMENTS`. Make sure you add it into the correct subdirectory in `models`!
+
+This is the SQL for `STG_PAYMENTS`:
+```
+with payments as (
+    select * from {{ source('snowflake_sample', 'raw_payments') }}
+)
+
+, final as (
+    select 
+        id as payment_id 
+        , order_id
+        , amount as amount_cents
+        , payment_method  
+    
+    from payments 
+)
+
+select * from final
+```
 
 **Hint:** Refer to Slide 14 of Lesson 2's deck.
+
 
 ## Jinja Templating Language
 [Jinja](https://docs.getdbt.com/docs/build/jinja-macros#jinja)
@@ -25,27 +44,27 @@ Your task is to create a **table** model called `FCT_CUSTOMER_PAYMENT` with the 
 * `CNT_ORDERS_BANK_TRANSFER` - the total number of orders placed via **bank transfer** (excluding returned/pending returned orders)
 * `CNT_ORDERS_GIFT_CARD` - the total number of orders placed via **gift card** (excluding returned/pending returned orders)
 
-**Hint:** 
-- You need to do a `LEFT JOIN` to the `STG_PAYMENTS` model, which contains the payment method used for each order.
-- You can reference [this example in the dbt documentation](https://docs.getdbt.com/docs/build/jinja-macros#jinja)
+**Hint:** You need to do a `LEFT JOIN` to the `STG_PAYMENTS` model, which contains the payment method used for each order.
 
 
 ### SQL Solution
 
-First, create the `FCT_CUSTOMER_PAYMENT` table using **pure SQL only**. Make the necessary joins and aggregations to produce the required columns and try to use CTEs as described in dbt Labs' [style guide](https://github.com/dbt-labs/corp/blob/main/dbt_style_guide.md#example-sql-with-ctes).
+First, create the `FCT_CUSTOMER_PAYMENT_SQL` table using **pure SQL only**. Make the necessary joins and aggregations to produce the required columns and try to use CTEs as described in dbt Labs' [style guide](https://github.com/dbt-labs/corp/blob/main/dbt_style_guide.md#example-sql-with-ctes).
 
 Once you are done creating the model, run it and review its output in Snowflake.
 
 ### Make your solution DRY
 
-Now that you've confirmed your model produces the correct results, let's try and minimize repetitive code in it. Inspect the parts of your model that produce the aggregations for number of orders per payment method.
+Now that you've confirmed your model produces the correct results, let's try and minimize repetitive code in it.Inspect the parts of `FCT_CUSTOMER_PAYMENT_SQL` that produce the aggregations for number of orders per payment method. 
 
-When using pure SQL to produce these columns, the code is very repetitive. Utilize Jinja's `for` loops and conditional statements to rewrite it. Run the model again to ensure the results remain consistent.
+When using pure SQL to produce these columns, the code is very repetitive. Utilize Jinja's `for` loops and conditional statements to rewrite it in a new dbt model, `FCT_CUSTOMER_PAYMENT_JINJA`. Run `FCT_CUSTOMER_PAYMENT_JINJA` to ensure the results remain consistent.
 
 **Note:** You can use some [Jinja functions](https://jinja.palletsprojects.com/en/3.1.x/templates/#jinja-filters.replace) to produce the column aliases. For example, `{{ 'Hello World' | replace('Hello', 'Hey') }}` will produce the following output: `Hey World`.
 
 **Hint:** 
 * For now, you can hard-code the list of payment methods in a variable.
+* You can reference [this example in the dbt documentation](https://docs.getdbt.com/docs/build/jinja-macros#jinja)
+
 
 ## dbt Macros
 [Macros](https://docs.getdbt.com/docs/build/jinja-macros#macros)
@@ -81,6 +100,5 @@ Use the macros in a new **view** model called `CUSTOMER_DISCOUNTS` that produces
 ## Committing and pushing your changes
 
 This is the final part of the lab, but it's an important one - remember to always commit and push your changes to GitHub when you have completed a task. 
-    ```
 
 Congratulations! You have completed this Lab successfully.
