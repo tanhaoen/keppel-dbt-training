@@ -1,6 +1,6 @@
 # Lesson 2 - Project Structure, Jinja and Macros
 
-In this lab, you will create new models in your project. After that, you will create another dbt model that will be written in Jinja. 
+In this lab, you will create new models in your project, using both SQL and Jinja. After that, you will create a macro and trying it out on one of the new models.
 
 **Note:** Each dbt-focused section of this lab is accompanied by a link to documentation (highlighted with blue text) that can help you complete your task. You are encouraged to go through it even if you have been able to complete your assignment without it.
 
@@ -44,11 +44,11 @@ For an upcoming sale campaign, the jaffle shop is interested in exploring the pa
 
 Your task is to create a **table** model called `FCT_CUSTOMER_PAYMENT` with the following columns:
 * `CUSTOMER_ID` - the ID of each customer who has placed an order 
-* `CNT_ORDERS` - the total number of orders placed (excluding returned/pending returned orders)
-* `CNT_ORDERS_CREDIT_CARD` - the total number of orders placed via **credit card** (excluding returned/pending returned orders)
-* `CNT_ORDERS_COUPON` - the total number of orders placed via **coupon** (excluding returned/pending returned orders)
-* `CNT_ORDERS_BANK_TRANSFER` - the total number of orders placed via **bank transfer** (excluding returned/pending returned orders)
-* `CNT_ORDERS_GIFT_CARD` - the total number of orders placed via **gift card** (excluding returned/pending returned orders)
+* `CNT_ORDERS` - the total number of orders placed 
+* `CNT_ORDERS_CREDIT_CARD` - the total number of orders placed via **credit card** 
+* `CNT_ORDERS_COUPON` - the total number of orders placed via **coupon** 
+* `CNT_ORDERS_BANK_TRANSFER` - the total number of orders placed via **bank transfer** 
+* `CNT_ORDERS_GIFT_CARD` - the total number of orders placed via **gift card** 
 
 
 ### SQL Solution
@@ -61,17 +61,17 @@ with orders as (
     select * from {{ ref('stg_orders') }}
 )
 
-, payment as (
+, payments as (
     select * from {{ ref('stg_payments') }}
 )
 
 , order_payment as (
     select 
         orders.*
-        , payment.payment_method
+        , payments.payment_method
 
     from orders 
-    left join payment using (order_id)
+    left join payments using (order_id)
 )
 
 , final as (
@@ -87,7 +87,7 @@ with orders as (
 select * from final
 ```
 
-Once you are done creating the model, run `FCT_CUSTOMER_PAYMENT_SQL` and all of the upstream tables using this command:
+Once you are done creating the model, run `FCT_CUSTOMER_PAYMENT_SQL` and all of the upstream models (e.g. `STG_ORDERS`, `STG_PAYMENTS`) using this command:
 ```
 dbt run --select +fct_customer_payment_sql
 ```
@@ -95,11 +95,11 @@ dbt run --select +fct_customer_payment_sql
 
 ### Make your solution DRY
 
-Now that you've confirmed your model produces the correct results, let's try and minimize repetitive code in it.Inspect the parts of `FCT_CUSTOMER_PAYMENT_SQL` that produce the aggregations for number of orders per payment method. 
+Now that you've confirmed your model produces the correct results, let's try and minimize repetitive code in it. Inspect the parts of `FCT_CUSTOMER_PAYMENT_SQL` that produce the aggregations for number of orders per payment method. 
 
 When using pure SQL to produce these columns, the code is very repetitive. Utilize Jinja's `for` loops and conditional statements to rewrite it in a new dbt model, `FCT_CUSTOMER_PAYMENT_JINJA`. 
 
-Compile `FCT_CUSTOMER_PAYMENT_JINJA` by either clicking the "Compiled code" button, or running this command
+Look at the compiled SQL of `FCT_CUSTOMER_PAYMENT_JINJA` by either clicking the "Compiled code" button, or running this command. The compiled SQL should look similar to what you have in `FCT_CUSTOMER_PAYMENT_SQL`.
 ```
 dbt compile --select fct_customer_payment_jinja
 ```
@@ -110,7 +110,8 @@ Run `FCT_CUSTOMER_PAYMENT_JINJA` to ensure the results remain consistent.
 dbt run --select fct_customer_payment_jinja
 ```
 
-**Note:** You can use some [Jinja functions](https://jinja.palletsprojects.com/en/3.1.x/templates/#jinja-filters.replace) to produce the column aliases. For example, `{{ 'Hello World' | replace('Hello', 'Hey') }}` will produce the following output: `Hey World`.
+**Note:** 
+* You can use some [Jinja functions](https://jinja.palletsprojects.com/en/3.1.x/templates/#jinja-filters.replace) to produce the column aliases. For example, `{{ 'Hello World' | replace('Hello', 'Hey') }}` will produce the following output: `Hey World`.
 
 **Hint:** 
 * For now, you can hard-code the list of payment methods in a variable.
