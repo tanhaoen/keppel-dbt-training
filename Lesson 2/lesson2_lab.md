@@ -29,6 +29,12 @@ select * from final
 
 **Hint:** Refer to Slide 14 of Lesson 2's deck.
 
+When you are done, execute the following command
+```
+dbt run --select staging.*
+```
+You should see that all models in your `staging` directory have run and materialized in Snowflake. You can navigate to your Snowflake console to inspect the output.
+
 
 ## Jinja Templating Language
 [Jinja](https://docs.getdbt.com/docs/build/jinja-macros#jinja)
@@ -44,20 +50,28 @@ Your task is to create a **table** model called `FCT_CUSTOMER_PAYMENT` with the 
 * `CNT_ORDERS_BANK_TRANSFER` - the total number of orders placed via **bank transfer** (excluding returned/pending returned orders)
 * `CNT_ORDERS_GIFT_CARD` - the total number of orders placed via **gift card** (excluding returned/pending returned orders)
 
-**Hint:** You need to do a `LEFT JOIN` to the `STG_PAYMENTS` model, which contains the payment method used for each order.
+**Hint:** You need to do a `LEFT JOIN` between `STG_ORDERS` and `STG_PAYMENTS` model, which contains the payment method used for each order.
 
 
 ### SQL Solution
 
 First, create the `FCT_CUSTOMER_PAYMENT_SQL` table using **pure SQL only**. Make the necessary joins and aggregations to produce the required columns and try to use CTEs as described in dbt Labs' [style guide](https://github.com/dbt-labs/corp/blob/main/dbt_style_guide.md#example-sql-with-ctes).
 
-Once you are done creating the model, run it and review its output in Snowflake.
+Once you are done creating the model, run `FCT_CUSTOMER_PAYMENT_SQL` and all of the upstream tables using this command:
+```
+dbt run --select +fct_customer_payment_sql
+```
+
 
 ### Make your solution DRY
 
 Now that you've confirmed your model produces the correct results, let's try and minimize repetitive code in it.Inspect the parts of `FCT_CUSTOMER_PAYMENT_SQL` that produce the aggregations for number of orders per payment method. 
 
 When using pure SQL to produce these columns, the code is very repetitive. Utilize Jinja's `for` loops and conditional statements to rewrite it in a new dbt model, `FCT_CUSTOMER_PAYMENT_JINJA`. Run `FCT_CUSTOMER_PAYMENT_JINJA` to ensure the results remain consistent.
+
+```
+dbt run --select fct_customer_payment_jinja
+```
 
 **Note:** You can use some [Jinja functions](https://jinja.palletsprojects.com/en/3.1.x/templates/#jinja-filters.replace) to produce the column aliases. For example, `{{ 'Hello World' | replace('Hello', 'Hey') }}` will produce the following output: `Hey World`.
 
