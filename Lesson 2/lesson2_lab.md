@@ -50,12 +50,42 @@ Your task is to create a **table** model called `FCT_CUSTOMER_PAYMENT` with the 
 * `CNT_ORDERS_BANK_TRANSFER` - the total number of orders placed via **bank transfer** (excluding returned/pending returned orders)
 * `CNT_ORDERS_GIFT_CARD` - the total number of orders placed via **gift card** (excluding returned/pending returned orders)
 
-**Hint:** You need to do a `LEFT JOIN` between `STG_ORDERS` and `STG_PAYMENTS` model, which contains the payment method used for each order.
-
 
 ### SQL Solution
 
 First, create the `FCT_CUSTOMER_PAYMENT_SQL` table using **pure SQL only**. Make the necessary joins and aggregations to produce the required columns and try to use CTEs as described in dbt Labs' [style guide](https://github.com/dbt-labs/corp/blob/main/dbt_style_guide.md#example-sql-with-ctes).
+
+You can use the following SQL as a starting point, and add the missing columns:
+```
+with orders as (
+    select * from {{ ref('stg_orders') }}
+)
+
+, payment as (
+    select * from {{ ref('stg_payments') }}
+)
+
+, order_payment as (
+    select 
+        orders.*
+        , payment.payment_method
+
+    from orders 
+    left join payment using (order_id)
+)
+
+, final as (
+    select 
+        customer_id
+        , count(1) as cnt_orders 
+        , count_if(payment_method='credit_card') as cnt_orders_credit_card
+
+    from order_payment
+    group by 1
+)
+
+select * from final
+```
 
 Once you are done creating the model, run `FCT_CUSTOMER_PAYMENT_SQL` and all of the upstream tables using this command:
 ```
@@ -67,7 +97,14 @@ dbt run --select +fct_customer_payment_sql
 
 Now that you've confirmed your model produces the correct results, let's try and minimize repetitive code in it.Inspect the parts of `FCT_CUSTOMER_PAYMENT_SQL` that produce the aggregations for number of orders per payment method. 
 
-When using pure SQL to produce these columns, the code is very repetitive. Utilize Jinja's `for` loops and conditional statements to rewrite it in a new dbt model, `FCT_CUSTOMER_PAYMENT_JINJA`. Run `FCT_CUSTOMER_PAYMENT_JINJA` to ensure the results remain consistent.
+When using pure SQL to produce these columns, the code is very repetitive. Utilize Jinja's `for` loops and conditional statements to rewrite it in a new dbt model, `FCT_CUSTOMER_PAYMENT_JINJA`. 
+
+Compile `FCT_CUSTOMER_PAYMENT_JINJA` by either clicking the "Compiled code" button, or running this command
+```
+dbt compile --select fct_customer_payment_jinja
+```
+
+Run `FCT_CUSTOMER_PAYMENT_JINJA` to ensure the results remain consistent.
 
 ```
 dbt run --select fct_customer_payment_jinja
@@ -83,32 +120,16 @@ dbt run --select fct_customer_payment_jinja
 ## dbt Macros
 [Macros](https://docs.getdbt.com/docs/build/jinja-macros#macros)
 
-For the campaign, the store would like to offer its loyal customers personalized discounts based on their shopping activity and the time passed since they became a customer. Fortunately, they already have a good summary of customers' shopping history in the `CUSTOMERS_OVERVIEW` model and can calculate the discounts based on it.
+Refer to the documentation above, and copy the `cents_to_dollars` macro into your project. 
+```
+{% macro cents_to_dollars(column_name, scale=2) %}
+    ({{ column_name }} / 100)::numeric(16, {{ scale }})
+{% endmacro %}
+```
 
-In order to be eligible for a discount, a customer needs to meet at least one of the following criteria:
-* Having placed at least 3 non-cancelled orders
-* Having spent at least 300 USD across all orders
+Once you have done so, modify `STG_PAYMENTS` to include the `AMOUNT_DOLLARS` column. You should use the `cents_to_dollars` macro in your implementation.
 
-If they don't meet either condition, they do not get a personalized discount.
-
-The discount itself is calculated as follows:
-* If the customer has 3 orders or less: the discount is 3% of their `TOTAL_AMOUNT_SPENT`
-* If the customer more than 3 orders: the discount is 5% of their `TOTAL_AMOUNT_SPENT`
-
-Your task is to create the following **macros**:
-* `get_discount_eligibility` - returns a *boolean* value (`TRUE` or `FALSE`) indicating if a customer is eligible for a discount
-* `calculate_discount` - returns a *float* value rounded to the second decimal representing the discount in USD, calculated as described above
-
-Both of the macros accept the same arguments:
-* `order_count`
-* `total_amount_spent`
-
-Use the macros in a new **view** model called `CUSTOMER_DISCOUNTS` that produces the following columns:
-* `CUSTOMER_ID`
-* `NUMBER_OF_ORDERS`
-* `TOTAL_AMOUNT_SPENT`
-* `IS_ELIGIBLE_FOR_DISCOUNT` - created using the `get_discount_eligibility` macro
-* `DISCOUNT_USD` - created using the `calculate_discount` macro 
+**Hint:** Refer to dbt's documentation on how to use the macro.
 
 
 ## Committing and pushing your changes
