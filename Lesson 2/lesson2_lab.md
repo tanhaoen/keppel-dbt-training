@@ -1,8 +1,15 @@
 # Lesson 2 - Familiarising yourself with Jinja and Macros
 
-In this lab, you will create a new dbt model that will be written in Jinja. Then, you will modify the `generate_schema_name` macro that will be used for separating Dev and Prod schemas.
+In this lab, you will first create a staging model, `STG_PAYMENTS`. After that, you will create another dbt model that will be written in Jinja. 
 
 **Note:** Each dbt-focused section of this lab is accompanied by a link to documentation (highlighted with blue text) that can help you complete your task. You are encouraged to go through it even if you have been able to complete your assignment without it.
+
+## Creating a staging model
+Create a `STG_PAYMENTS` model in your project, which reads from `RAW_PAYMENTS`. Try to use CTEs as described in dbt Labs' [style guide](https://github.com/dbt-labs/corp/blob/main/dbt_style_guide.md#example-sql-with-ctes).
+
+Also, make sure you add it into the correct subdirectory in `models`.
+
+**Hint:** Refer to Slide 14 of Lesson 2's deck.
 
 ## Jinja Templating Language
 [Jinja](https://docs.getdbt.com/docs/build/jinja-macros#jinja)
@@ -18,12 +25,10 @@ Your task is to create a **table** model called `FCT_CUSTOMER_PAYMENT` with the 
 * `CNT_ORDERS_BANK_TRANSFER` - the total number of orders placed via **bank transfer** (excluding returned/pending returned orders)
 * `CNT_ORDERS_GIFT_CARD` - the total number of orders placed via **gift card** (excluding returned/pending returned orders)
 
-**Hint:** You need to do a `LEFT JOIN` to the `STG_PAYMENTS` model, which contains the payment method used for each order.
+**Hint:** 
+- You need to do a `LEFT JOIN` to the `STG_PAYMENTS` model, which contains the payment method used for each order.
+- You can reference [this example in the dbt documentation](https://docs.getdbt.com/docs/build/jinja-macros#jinja)
 
-The SQL for `STG_PAYMENTS` is provided to assist you with this task:
-```
-select * from something
-```
 
 ### SQL Solution
 
