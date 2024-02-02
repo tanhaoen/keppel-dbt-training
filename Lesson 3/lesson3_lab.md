@@ -1,30 +1,74 @@
-# Session02 - Tests & Documentation
+# Session02 - Packages, Tests & Documentation
 
-In this lab, you will add tests to dbt resources you have already created, such as sources and models. Then, you'll also document them and generate dbt Docs for your project. 
+In this lab, you will install the **dbt_utils** package, and add tests to dbt models you have already created. Then, you'll also document them and generate dbt Docs for your project. 
 
 **Note:** Each dbt-focused section of this lab is accompanied by a link to documentation (highlighted with blue text) that can help you complete your task. You are encouraged to go through it even if you have been able to complete your assignment without it.
 
+## Installing a dbt Package
+In the root directory of your project (same level as **dbt_project.yml**), created a file named **packages.yml**. Install the **dbt_utils** by copying the following configuration into your **packages.yml** file.
+
+[The dbt_utils package](https://hub.getdbt.com/dbt-labs/dbt_utils/latest/)
+
+```
+packages:
+  - package: dbt-labs/dbt_utils
+    version: 1.1.1
+```
+
+Save the changes, and run the following command in your IDE
+```
+dbt deps
+```
+
+To check that your packages is installed, navigate to the `dbt_packages` folder of your project. You should see a subfolder named `dbt_utils`.
+
+Now run the following command, and notice the `dbt_packages` folder being removed. This command uninstalls all packages from your project.
+```
+dbt clean
+```
+
+Fret not! You can reinstall the package by running the `dbt deps` command again :)
+
+
 ## Testing your dbt Project
 
-The first part of this Lab covers the topic of testing dbt resources. Make sure to execute `dbt test` after each section to confirm that your tests were defined properly. There will be **no** tests that are expected to fail in the following assignments.
+The first part of this Lab covers the topic of testing dbt resources. **Make sure to execute `dbt test` after each section to confirm that your tests were defined properly.** There will be **no** tests that are expected to fail in the following assignments.
+
 
 ### Testing your Primary Keys
 [How to test primary keys with dbt](https://docs.getdbt.com/blog/primary-key-testing#how-to-test-primary-keys-with-dbt)
 
 Your first task is to add tests to all Primary Key columns in your project. To meet the criteria for a Primary Key, a column must not contain duplicate values or nulls.
 
-For the resources listed below, determine the appropriate Primary Key field and add the necessary tests to it:
+For the models listed below, determine the appropriate Primary Key field and add the `unique` and `not_null` tests to it:
 
-**Source tables:**
-* `RAW_CUSTOMERS`
-* `RAW_ORDERS`
-* `RAW_PAYMENTS`
-
-**Models:**
 * `STG_CUSTOMERS`
 * `STG_ORDERS`
 * `STG_PAYMENTS`
 
+You can do so by creating a YAML file in same subfolder of the model. For example, for the `STG_CUSTOMERS` model, create a YAML file in the `staging` subfolder named **stg_customers.yml** with the following configuration:
+
+```
+version: 2
+
+models:
+  - name: stg_customers
+    columns:
+      - name: example_column
+        tests:
+            - unique
+            - not_null
+```
+
+Once this is done, execute this command to run the tests you have defined for all of the models in the `staging` subfolder:
+```
+dbt test --select staging.*
+```
+
+Observe the results and logs when the command has been completed:
+
+- Did all tests passed?
+- What information does the details of the logs contain?
 
 ### Testing for referential integrity
 
@@ -50,6 +94,32 @@ return_pending
 ```
 
 Your task is to create *accepted_values* tests for the model `FCT_ORDERS` that validates that these are the only values that this column contains. 
+
+### Testing with dbt_utils package
+
+[expression_is_true test in dbt_utils](https://github.com/dbt-labs/dbt-utils/tree/1.1.1/?tab=readme-ov-file#expression_is_true-source)
+
+Preview the data in the `FCT_CUSTOMER_PAYMENT_JINJA` model: notice that `CNT_ORDERS` represents the total orders placed by each customer, which is a summation of the following columns:
+
+```
+CNT_ORDERS_CREDIT_CARD
+CNT_ORDERS_COUPON
+CNT_ORDERS_BANK_TRANSFER
+CNT_ORDERS_GIFT_CARD
+```
+
+Your task is to add a dbt test on `FCT_CUSTOMER_PAYMENT_JINJA` using the `expression_is_true` test from **dbt_utils**:
+
+```
+version: 2
+
+models:
+  - name: fct_customer_payment_jinja
+    tests:
+      - dbt_utils.expression_is_true:
+          # fill in the appropriate expression here  
+          expression: "col_a + col_b = total"
+```
 
 ## Documenting your dbt Project
 
