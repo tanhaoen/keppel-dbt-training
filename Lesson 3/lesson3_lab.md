@@ -1,4 +1,4 @@
-# Session02 - Packages, Tests & Documentation
+# Session03 - Packages, Tests & Documentation
 
 In this lab, you will install the **dbt_utils** package, and add tests to dbt models you have already created. Then, you'll also document them and generate dbt Docs for your project. 
 
@@ -20,9 +20,7 @@ Save the changes, and run the following command in your IDE
 dbt deps
 ```
 
-To check that your packages is installed, navigate to the `dbt_packages` folder of your project. You should see a subfolder named `dbt_utils`.
-
-Now run the following command, and notice the `dbt_packages` folder being removed. This command uninstalls all packages from your project.
+To check that your packages is installed, navigate to the `dbt_packages` folder of your project. You should see a subfolder named `dbt_utils`. Now, run the following command, and notice the `dbt_packages` folder being removed. This command uninstalls all packages from your project.
 ```
 dbt clean
 ```
@@ -78,6 +76,11 @@ Taking a look at the `FCT_ORDERS` data, we can see that the column `CUSTOMER_ID`
 
 Your task is to add a relationships tests to your project that checks that all `CUSTOMER_ID` values from the model `FCT_ORDERS` have a matching value in the column `CUSTOMER_ID` of in the model `STG_CUSTOMERS`.
 
+Once this is done, execute this command to run the tests you have defined for `FCT_ORDERS`
+```
+dbt test --select fct_orders
+```
+
 
 ### Testing accepted values
 
@@ -94,6 +97,12 @@ return_pending
 ```
 
 Your task is to create *accepted_values* tests for the model `FCT_ORDERS` that validates that these are the only values that this column contains. 
+
+Once this is done, execute this command to run the tests you have defined for `FCT_ORDERS`
+```
+dbt test --select fct_orders
+```
+
 
 ### Testing with dbt_utils package
 
@@ -121,6 +130,11 @@ models:
           expression: "col_a + col_b = total"
 ```
 
+Once this is done, execute this command to run the test you have defined for the `FCT_CUSTOMER_PAYMENT_JINJA`
+```
+dbt test --select fct_customer_payment_jinja
+```
+
 ## Documenting your dbt Project
 
 The second part of this lab covers the subject of documenting your dbt Project. Documentation is a very important aspect of creating and maintaining your dbt Project as it gives non-technical users clarity about how the data has been transformed across the different data layers. 
@@ -134,7 +148,7 @@ Your task is to add descriptions to `FCT_ORDERS` in your project, and their resp
 |Name         |Type  |Description                                                                                                        |
 |-------------|:----:|-------------------------------------------------------------------------------------------------------------------|
 |**fct_orders** |**table**|**Fact table containing details about the store's orders, such as order date, customer_id and status.**       |
-|`customer_id`  |column|The ID of the customer who placed the oder. Foreign key to `CUSTOMERS`.                                          |
+|`customer_id`  |column|The ID of the customer who placed the oder. Foreign key to `STG_CUSTOMERS`.                                      |
 |`order_id`     |column|A unique identifier for each order.                                                                              |
 |`order_status` |column|*<docs block, check instructions below>*                                                                         |
 |`order_date`   |column|The date the order was placed on.                                                                                |
@@ -200,7 +214,7 @@ Now that you have included the relevant documentation to your project, it's time
 dbt docs generate
 ```
 
-Then, your site will be served locally by dbt. Once you are no longer in need of reviewing it, you can interrupt the server with `Ctrl + C`.
+Then, serve and view the docuementation for your project by clicking on the "View docs" button (book icon), which is next to your branch name at the top left of the IDE.
 
 ## Committing and pushing your changes
 
