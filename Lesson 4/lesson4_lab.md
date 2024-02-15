@@ -100,10 +100,8 @@ select * from orders_<your name> where id in (86,87);
 ```
 
 
-## Submitting your assignment
-To submit your assignment, collect the SQL queries in a `txt` file named `Snowflake_201_Day_4_<YOUR NAME>` and upload them to your GitLab repository.
+## Congratulations! You have completed this Lab successfully.
 
-Congratulations! You have completed this Lab successfully.
 
 
 
