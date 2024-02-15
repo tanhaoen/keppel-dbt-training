@@ -31,7 +31,7 @@ In this lab, you will learn how to work with User-Defined Functions and Stored P
 
 
 ## Exercise 3: Use User-Defined Function in queries
-1. Write a query which selects the `payment_method` along with `id`.
+1. Run this query which selects the `payment_method` along with `id`.
     `payment_method` for each payment is as follows: 
     - When the `payment_method` is 'bank_transfer' or 'credit_card', the `payment_type` is 'CASHLESS'.
     - When the `payment_method` is 'gift_card' or 'coupon', the `payment_type` is 'CASH'.
@@ -53,15 +53,8 @@ from raw_payments;
 5. Write the same query again but this time using the UDF to create the `payment_type` column.
 
 
-## Exercise 4: Create your first Stored Procedure
-1. Create a new database named `SP_<YOUR NAME>` and a schema called `SP`.
-2. Create a Stored Procedure named `MESSAGE_<YOUR NAME>` using SQL (Snowflake Scripting) which returns the value of an argument that is passed in. 
-3. Call the stored procedure and pass 'This is your first stored procedure' as an arguement.
+## Exercise 4: Create a Stored Procedure which updates a table
 
-* [CREATE PROCEDURE](https://docs.snowflake.com/en/sql-reference/sql/create-procedure)
-* [Writing Stored Procedures in Snowflake Scripting](https://docs.snowflake.com/en/developer-guide/stored-procedure/stored-procedures-snowflake-scripting)
-
-## Exercise 5: Create a Stored Procedure which updates a table
 1. Create a clone of the `RAW_ORDERS` table named `ORDERS_<YOUR NAME>`.
 
 * [CREATE TABLE ... CLONE](https://docs.snowflake.com/en/sql-reference/sql/create-table#create-table-clone)
