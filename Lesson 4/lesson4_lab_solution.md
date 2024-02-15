@@ -92,9 +92,9 @@ $$;
 
 Calling the Stored Procedure and checking the updated record:
 ```
-call update_status_jy(86);
+CALL update_status_jy(86);
 select * from orders_jy where id in (86,87);
 
-call update_status_jy(87);
+CALL update_status_jy(87);
 select * from orders_jy where id in (86,87);
 ```

@@ -74,7 +74,7 @@ CREATE TABLE orders_<your name> CLONE raw_orders;
 
 **Note:** You'll need to familiarise with Snowflake Scripting to write a SQL stored procedure:
 
-*[Introduction to Snowflake Stored Procedures](https://thinketl.com/introduction-to-snowflake-stored-procedures/)
+* [Introduction to Snowflake Stored Procedures](https://thinketl.com/introduction-to-snowflake-stored-procedures/)
 
 * [Working with Variables](https://docs.snowflake.com/en/developer-guide/snowflake-scripting/variables#label-snowscript-variables-binding)
 
@@ -86,6 +86,10 @@ select * from orders_<your name> where id in (86,87);
 
 4. Call the Stored Procedure twice - the first time for `ID` value being '86' and the second with '87'. 
 
+```
+CALL update_status_<your name>(86);
+```
+
 5. Check that `status` for orders with the `ID` value being '86' and the second with '87' has changed to `completed`.
 
 ```
@@ -93,7 +97,7 @@ select * from orders_<your name> where id in (86,87);
 ```
 
 
-## Congratulations! You have completed this Lab successfully.
+### Congratulations! You have completed this Lab successfully.
 
 
 
