@@ -75,9 +75,13 @@ CREATE TABLE orders_<your name> CLONE raw_orders;
     - Takes the `ID` column from `ORDERS_<YOUR NAME>` as an argument.
 
     - Updates the value in the `STATUS` column to `completed` for the `ID` value passed as an argument
-        E.g. For 'order_id = 125' the status should change from 'Pending' to 'Confirmed'
+        E.g. The status for 'id = 86' should change from 'placed' to 'completed'
 
     - Returns the following message: 'Order status updated to completed for Order ID: <order_id>'
+
+**Note:** You'll need to familiarise with Snowflake Scripting to write a SQL stored procedure:
+
+*[Introduction to Snowflake Stored Procedures](https://thinketl.com/introduction-to-snowflake-stored-procedures/)
 
 * [Working with Variables](https://docs.snowflake.com/en/developer-guide/snowflake-scripting/variables#label-snowscript-variables-binding)
 
