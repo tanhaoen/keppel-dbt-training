@@ -1,8 +1,12 @@
-# Session03 - Packages, Tests & Documentation
+# Lesson 3 - Packages, Tests & Documentation
 
 In this lab, you will install the **dbt_utils** package, and add tests to dbt models you have already created. Then, you'll also document them and generate dbt Docs for your project. 
 
 **Note:** Each dbt-focused section of this lab is accompanied by a link to documentation (highlighted with blue text) that can help you complete your task. You are encouraged to go through it even if you have been able to complete your assignment without it.
+
+## Create a branch
+
+Create a branch in your IDE following this naming convention: `lab-3-<your name>` (e.g. lab-3-jingyu)
 
 ## Installing a dbt Package
 In the root directory of your project (same level as **dbt_project.yml**), created a file named **packages.yml**. Install the **dbt_utils** by copying the following configuration into your **packages.yml** file.
@@ -20,7 +24,7 @@ Save the changes, and run the following command in your IDE
 dbt deps
 ```
 
-To check that your packages is installed, navigate to the `dbt_packages` folder of your project. You should see a subfolder named `dbt_utils`. Now, run the following command, and notice the `dbt_packages` folder being removed. This command uninstalls all packages from your project.
+To check that your packages is installed, navigate to the `dbt_packages` folder of your project. You should see a subfolder named `dbt_utils`. Now, run the following command, and notice the `dbt_packages` folder being removed (this command uninstalls all packages from your project):
 ```
 dbt clean
 ```
