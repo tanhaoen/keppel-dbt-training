@@ -157,13 +157,13 @@ CREATE MASKING POLICY FIRST_NAME_MASK_<YOUR NAME> AS (val string) RETURNS string
 ALTER TABLE raw_customers MODIFY COLUMN first_name SET MASKING POLICY FIRST_NAME_MASK_<YOUR NAME>;
 ```
 
-3. Using the `DBT_TRAIN_ANALYST` role, query the `USERS_INFO` table. What do you see in the `FIRST_NAME` column?
+3. Using the `DBT_TRAIN_ANALYST` role, query the `RAW_CUSTOMERS` table. What do you see in the `FIRST_NAME` column?
 ```
 USE ROLE DBT_TRAIN_READER;
 select * from dbt_train_db.dbt_train_jaffle_shop.raw_customers;
 ```
 
-4. Using the `DBT_TRAIN_READER` role, query the `USERS_INFO` table. What do you see in the `FIRST_NAME` column?
+4. Using the `DBT_TRAIN_READER` role, query the `RAW_CUSTOMERS` table. What do you see in the `FIRST_NAME` column?
 ```
 USE ROLE DBT_TRAIN_ANALYST;
 select * from dbt_train_db.dbt_train_jaffle_shop.raw_customers;
