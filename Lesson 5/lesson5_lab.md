@@ -4,7 +4,7 @@ In this lab, you will try different methods of loading data into a table.
 
 **Note:** Each section of this lab is accompanied by a link to documentation (highlighted with blue text) that can help you complete your task. You are encouraged to go through it even if you have been able to complete your assignment without it.
 
-## Load a CSV file from an S3 bucket using SQL
+## Exercise 1: Load a CSV file from an S3 bucket using SQL
 1. Using SQL, create a new table named `VEGETABLES_HEIGHT_<YOUR NAME>` into the `DBT_TRAIN_JAFFLE_SHOP` schema. The table should have 4 columns: 
 
 * `PLANT_NAME`
@@ -110,5 +110,27 @@ FILE_FORMAT = CSV_VEGETABLES_<YOUR NAME>;
 
 You should see that all 41 rows have been loaded with no errors.
 
-## Create External Data with data in S3 bucket
-1. 
+## Exercise 2: Create an External Table with data in a S3 bucket
+1. Create an external table named `S3_UNI_LAB_TABLE_<YOUR_NAME>` from the external stage and file format you have created in the earlier exercise
+
+* [CREATE EXTERNAL TABLE](https://docs.snowflake.com/en/sql-reference/sql/create-external-table)
+
+```
+CREATE OR REPLACE EXTERNAL TABLE S3_UNI_LAB_TABLE_<YOUR_NAME> WITH 
+    LOCATION=@S3_UNI_LAB_STAGE_<YOUR_NAME>
+    REFRESH_ON_CREATE = TRUE
+    FILE_FORMAT = (FORMAT_NAME = CSV_VEGETABLES_<YOUR_NAME>);
+```
+
+2. Run this query on the external table. What do you see?
+```
+select distinct metadata$filename from S3_UNI_LAB_TABLE_<YOUR_NAME>;
+```
+
+The external table contains 1 row for every record per data file in the `S3_UNI_LAB_STAGE_<YOUR_NAME>` stage. To filter for only records in **veg_plant_height.csv**, add a WHERE condition on the `metadata$filename` column:
+```
+select *
+from S3_UNI_LAB_TABLE_<YOUR NAME>
+where metadata$filename = 'veg_plant_height.csv';
+```
+**Note:** The S3 bucket used for this lab does not similar data files organised into subdirectories. In practice, you should organise your data files into subdirectories in your storage location, and create a stage for each of them (e.g. logs for A, logs for B). In this way, you can create separate stages, and therefore separate External Tables for all data files in each subdirectory.
