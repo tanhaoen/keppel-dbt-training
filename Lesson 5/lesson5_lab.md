@@ -165,3 +165,5 @@ select * from dbt_train_db.dbt_train_jaffle_shop.raw_customers;
 USE ROLE DBT_TRAIN_ANALYST;
 select * from dbt_train_db.dbt_train_jaffle_shop.raw_customers;
 ```
+
+### Congratulations! You have completed this Lab successfully.
