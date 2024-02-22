@@ -79,7 +79,8 @@ ON_ERROR = CONTINUE;
 select * from VEGETABLES_HEIGHT_<YOUR NAME>;
 ```
 
-7. **OPTIONAL:** The error message below was produced during loading in Step 5, which is caused by having different number of columns per row in **veg_plant_height.csv**.  
+**OPTIONAL** 
+The error message below was produced during loading in Step 5, which is caused by having different number of columns per row in **veg_plant_height.csv**.  
 ```
 Field delimiter ',' found while expecting record delimiter '\n'
 ```
@@ -142,6 +143,8 @@ where metadata$filename = 'veg_plant_height.csv';
     - Any other roles should see the `****` value in the `FIRST_NAME` column.
 
 ```
+USE ROLE DBT_TRAIN_MASKING_ADMIN;
+
 CREATE MASKING POLICY FIRST_NAME_MASK_<YOUR NAME> AS (val string) RETURNS string ->
  CASE
    WHEN CURRENT_ROLE() IN ('DBT_TRAIN_ANALYST') THEN val
