@@ -136,14 +136,32 @@ where metadata$filename = 'veg_plant_height.csv';
 **Note:** The S3 bucket used for this lab does not similar data files organised into subdirectories. In practice, you should organise your data files into subdirectories in your storage location, and create a stage for each of them (e.g. logs for A, logs for B). In this way, you can create separate stages, and therefore separate External Tables for all data files in each subdirectory.
 
 ## Exercise 3: Create and apply masking policies
-1. Using the `MASKING_ADMIN` role, create a masking policy with the following requirements:
-    - It should be named `NAME_MASK_<YOUR NAME>` for the `FIRST_NAME` column in the `RAW_CUSTOMERS` table. 
+1. Using the `DBT_TRAIN_MASKING_ADMIN` role, create a masking policy with the following requirements:
+    - It should be named `FIRST_NAME_MASK_<YOUR NAME>` for the `FIRST_NAME` column in the `RAW_CUSTOMERS` table. 
     - Only the `DBT_TRAIN_ANALYST` role should be able to see the original data in the `FIRST_NAME` column.
-    - Any other roles should see the `*************` value in the `FIRST_NAME` column.
+    - Any other roles should see the `****` value in the `FIRST_NAME` column.
 
-2. Apply the masking policy to the `SSN` column.
+```
+CREATE MASKING POLICY FIRST_NAME_MASK_<YOUR NAME> AS (val string) RETURNS string ->
+ CASE
+   WHEN CURRENT_ROLE() IN ('DBT_TRAIN_ANALYST') THEN val
+   ELSE '****'
+ END;
+```
 
-3. Using the `DBT_TRAIN_ANALYST` role, query the `USERS_INFO` table. What do you see in the `SSN` column?
+2. Apply the masking policy to the `FIRST_NAME` column.
+```
+ALTER TABLE raw_customers MODIFY COLUMN first_name SET MASKING POLICY FIRST_NAME_MASK_<YOUR NAME>;
+```
 
-4. Using the `DBT_TRAIN_READER` role, query the `USERS_INFO` table. What do you see in the `SSN` column?
+3. Using the `DBT_TRAIN_ANALYST` role, query the `USERS_INFO` table. What do you see in the `FIRST_NAME` column?
+```
+USE ROLE DBT_TRAIN_READER;
+select * from dbt_train_db.dbt_train_jaffle_shop.raw_customers;
+```
 
+4. Using the `DBT_TRAIN_READER` role, query the `USERS_INFO` table. What do you see in the `FIRST_NAME` column?
+```
+USE ROLE DBT_TRAIN_ANALYST;
+select * from dbt_train_db.dbt_train_jaffle_shop.raw_customers;
+```
