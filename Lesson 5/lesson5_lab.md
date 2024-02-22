@@ -134,3 +134,16 @@ from S3_UNI_LAB_TABLE_<YOUR NAME>
 where metadata$filename = 'veg_plant_height.csv';
 ```
 **Note:** The S3 bucket used for this lab does not similar data files organised into subdirectories. In practice, you should organise your data files into subdirectories in your storage location, and create a stage for each of them (e.g. logs for A, logs for B). In this way, you can create separate stages, and therefore separate External Tables for all data files in each subdirectory.
+
+## Exercise 3: Create and apply masking policies
+1. Using the `MASKING_ADMIN` role, create a masking policy with the following requirements:
+    - It should be named `NAME_MASK_<YOUR NAME>` for the `FIRST_NAME` column in the `RAW_CUSTOMERS` table. 
+    - Only the `DBT_TRAIN_ANALYST` role should be able to see the original data in the `FIRST_NAME` column.
+    - Any other roles should see the `*************` value in the `FIRST_NAME` column.
+
+2. Apply the masking policy to the `SSN` column.
+
+3. Using the `DBT_TRAIN_ANALYST` role, query the `USERS_INFO` table. What do you see in the `SSN` column?
+
+4. Using the `DBT_TRAIN_READER` role, query the `USERS_INFO` table. What do you see in the `SSN` column?
+
