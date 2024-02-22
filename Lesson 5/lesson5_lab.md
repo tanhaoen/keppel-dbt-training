@@ -79,38 +79,6 @@ ON_ERROR = CONTINUE;
 select * from VEGETABLES_HEIGHT_<YOUR NAME>;
 ```
 
-**OPTIONAL** 
-The error message below was produced during loading in Step 5, which is caused by having different number of columns per row in **veg_plant_height.csv**.  
-```
-Field delimiter ',' found while expecting record delimiter '\n'
-```
-
-It is important to understand errors produced during loading before setting configurations. In the example above, a better workaround would be to adjust configuration for the file format created in Step 2:
-```
-CREATE FILE FORMAT CSV_VEGETABLES_<YOUR NAME>
-    type = CSV 
-    SKIP_HEADER = 1
-    ERROR_ON_COLUMN_COUNT_MISMATCH = FALSE;
-
-```
-Try recreating the `VEGETABLES_HEIGHT_<YOUR NAME>` table and loading the data without the `ON_ERROR` configuration in the `COPY INTO` command this time:
-```
-DROP TABLE VEGETABLES_HEIGHT_<YOUR NAME>;
-
-CREATE TABLE VEGETABLES_HEIGHT_<YOUR NAME> (
-    PLANT_NAME VARCHAR,
-    UNIT_OF_MEASURE VARCHAR,
-    LOW_END_OF_RANGE VARCHAR,
-    HIGH_END_OF_RANGE VARCHAR
-);
-
-COPY INTO VEGETABLES_HEIGHT_<YOUR NAME>
-FROM @S3_UNI_LAB_STAGE_JY/veg_plant_height.csv
-FILE_FORMAT = CSV_VEGETABLES_<YOUR NAME>;
-```
-
-You should see that all 41 rows have been loaded with no errors.
-
 ## Exercise 2: Create an External Table with data in a S3 bucket
 1. Create an external table named `S3_UNI_LAB_TABLE_<YOUR_NAME>` from the external stage and file format you have created in the earlier exercise
 
@@ -170,3 +138,36 @@ select * from dbt_train_db.dbt_train_jaffle_shop.raw_customers;
 ```
 
 ### Congratulations! You have completed this Lab successfully.
+
+## BONUS: Exericse 1
+
+The error message below was produced during loading in Step 5 is caused by having different number of columns per row in **veg_plant_height.csv**.  
+```
+Field delimiter ',' found while expecting record delimiter '\n'
+```
+
+In practice, it is important to understand errors produced during loading before setting configurations. In the example above, a better workaround would be to adjust configuration for the file format created in Step 2:
+```
+CREATE FILE FORMAT CSV_VEGETABLES_<YOUR NAME>
+    type = CSV 
+    SKIP_HEADER = 1
+    ERROR_ON_COLUMN_COUNT_MISMATCH = FALSE;
+
+```
+Try recreating the `VEGETABLES_HEIGHT_<YOUR NAME>` table and loading the data without the `ON_ERROR` configuration in the `COPY INTO` command this time:
+```
+DROP TABLE VEGETABLES_HEIGHT_<YOUR NAME>;
+
+CREATE TABLE VEGETABLES_HEIGHT_<YOUR NAME> (
+    PLANT_NAME VARCHAR,
+    UNIT_OF_MEASURE VARCHAR,
+    LOW_END_OF_RANGE VARCHAR,
+    HIGH_END_OF_RANGE VARCHAR
+);
+
+COPY INTO VEGETABLES_HEIGHT_<YOUR NAME>
+FROM @S3_UNI_LAB_STAGE_JY/veg_plant_height.csv
+FILE_FORMAT = CSV_VEGETABLES_<YOUR NAME>;
+```
+
+You should see that all 41 rows have been loaded with no errors.
