@@ -64,13 +64,13 @@ FILE_FORMAT = CSV_VEGETABLES_<YOUR NAME>;
 
 Notice the error message while executing the command. By default, Snowflake aborts the command whenever a loading error is encountered. 
 
-*[Check out the ON_ERROR configuration for the COPY INTO <table> command](https://docs.snowflake.com/en/sql-reference/sql/copy-into-table#copy-options-copyoptions)
+* [Check out the ON_ERROR configuration](https://docs.snowflake.com/en/sql-reference/sql/copy-into-table#copy-options-copyoptions)
 
 Rerun the command above, this time with an additional configuration of `ON_ERROR = CONTINUE`
 ```
-COPY INTO VEGETABLES_HEIGHT_JY
+COPY INTO VEGETABLES_HEIGHT_<YOUR NAME>
 FROM @S3_UNI_LAB_STAGE_JY/veg_plant_height.csv
-FILE_FORMAT = CSV_VEGETABLES_JY
+FILE_FORMAT = CSV_VEGETABLES_<YOUR NAME>
 ON_ERROR = CONTINUE;
 ```
 
@@ -102,7 +102,7 @@ select *
 from S3_UNI_LAB_TABLE_<YOUR NAME>
 where metadata$filename = 'veg_plant_height.csv';
 ```
-**Note:** The S3 bucket used for this lab does not similar data files organised into subdirectories. In practice, you should organise your data files into subdirectories in your storage location, and create a stage for each of them (e.g. logs for A, logs for B). In this way, you can create separate stages, and therefore separate External Tables for all data files in each subdirectory.
+**Note:** The S3 bucket used for this lab does not have similar data files organised into subdirectories. In practice, you should organise your data files into subdirectories in your storage location, and create a stage for each of them (e.g. logs for A, logs for B). In this way, you can create separate stages, and therefore separate External Tables for all data files in each subdirectory.
 
 ## Exercise 3: Create and apply masking policies
 1. Using the `DBT_TRAIN_MASKING_ADMIN` role, create a masking policy with the following requirements:
@@ -127,13 +127,13 @@ ALTER TABLE raw_customers MODIFY COLUMN first_name SET MASKING POLICY FIRST_NAME
 
 3. Using the `DBT_TRAIN_ANALYST` role, query the `RAW_CUSTOMERS` table. What do you see in the `FIRST_NAME` column?
 ```
-USE ROLE DBT_TRAIN_READER;
+USE ROLE DBT_TRAIN_ANALYST;
 select * from dbt_train_db.dbt_train_jaffle_shop.raw_customers;
 ```
 
 4. Using the `DBT_TRAIN_READER` role, query the `RAW_CUSTOMERS` table. What do you see in the `FIRST_NAME` column?
 ```
-USE ROLE DBT_TRAIN_ANALYST;
+USE ROLE DBT_TRAIN_READER;
 select * from dbt_train_db.dbt_train_jaffle_shop.raw_customers;
 ```
 
@@ -166,7 +166,7 @@ CREATE TABLE VEGETABLES_HEIGHT_<YOUR NAME> (
 );
 
 COPY INTO VEGETABLES_HEIGHT_<YOUR NAME>
-FROM @S3_UNI_LAB_STAGE_JY/veg_plant_height.csv
+FROM @S3_UNI_LAB_STAGE_<YOUR NAME>/veg_plant_height.csv
 FILE_FORMAT = CSV_VEGETABLES_<YOUR NAME>;
 ```
 
