@@ -24,8 +24,8 @@ join (
     select 
         b.id as customer_id,
         b.name as full_name,
-        b.last_name as surname,
-        b.first_name as givenname,
+        b.last_name,
+        b.first_name,
         min(order_date) as first_order_date,
         min(case when a.status NOT IN ('returned','return_pending') then order_date end) as first_non_returned_order_date,
         max(case when a.status NOT IN ('returned','return_pending') then order_date end) as most_recent_non_returned_order_date,
