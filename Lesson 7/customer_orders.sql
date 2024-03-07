@@ -1,13 +1,14 @@
 select 
     orders.id as order_id,
     orders.user_id as customer_id,
-    last_name as surname,
-    first_name as givenname,
+    customers.last_name,
+    customers.first_name,
     first_order_date,
     order_count,
     total_lifetime_value,
     round(amount/100.0,2) as order_value_dollars,
     orders.status as order_status,
+    payments.id as payment_id,
     payments.payment_method
 from dbt_train_db.dbt_train_jaffle_shop.raw_orders as orders
 
@@ -61,4 +62,4 @@ join (
 on orders.user_id = customer_order_history.customer_id
 
 left outer join dbt_train_db.dbt_train_jaffle_shop.raw_payments payments
-on orders.id = payments.order_id;
+on orders.id = payments.order_id
