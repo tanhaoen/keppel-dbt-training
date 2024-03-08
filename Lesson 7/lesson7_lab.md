@@ -507,7 +507,8 @@ dbt deps
 
 3. Click on "Preview" and check the results of the `compare_relations` macro. You should see only 1 row in the output, indicating that there is a 100% match of data in both tables: 
 
-IN_A | IN_B | COUNT | PERCENT_OF_TOTAL
-true | true | 113   | 100.0
+|IN_A | IN_B | COUNT | PERCENT_OF_TOTAL |
+|-----|------|-------|------------------|
+|true | true | 113   | 100.0            |
 
 4. **Optional**: Click on "Compile" and inspect the compiled SQL for the `compare_relations` macro
