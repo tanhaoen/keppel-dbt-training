@@ -104,8 +104,8 @@ with orders as (
     select
         orders.id as order_id
         , orders.user_id as customer_id
-        , last_name
-        , first_name
+        , customers_name.last_name
+        , customers_name.first_name
         , first_order_date
         , order_count
         , total_lifetime_value
@@ -129,6 +129,385 @@ select * from final
 ```
 
 
-## Step 5: Centralising transformations and splitting models - Intermediate 
+## Step 5: Centralising transformations and splitting models - Staging 
 
-1. 
+1. Identify transformations that can be moved to the staging layer for **customers**, **orders** and **payments**
+
+For **customers**:
+- `id` to `customer_id`
+- Create `full_name`
+
+For **orders**:
+- `id` to `order_id`
+- `user_id` to `customer_id`
+- `status` to `order_status`
+- Create `user_order_seq`
+
+For **payments**:
+- `id` to `payment_id`
+- Convert `amount` to `order_value_dollars` 
+
+**Note**: As there are multiple rows per `order_id` in `stg_payments`, `stg_payments.amount` does not represent the total order value. Instead, it should be the summation of `amount` in `stg_payments`.
+
+2. Create staging CTEs and update the code to read from the staging CTEs
+
+3. Move logic from staging CTEs into staging models.
+
+Updated code for `stg_customers`
+```
+with customers as (
+    select * from {{ source('snowflake_sample', 'raw_customers') }}
+)
+
+, final as (
+    select 
+        id as customer_id
+        , first_name
+        , last_name
+        , first_name || ' ' || last_name as full_name
+    
+    from customers 
+)
+
+select * from final
+```
+
+Updated code for `stg_orders`
+```
+with orders as (
+    select * from {{ source('snowflake_sample', 'raw_orders') }}
+)
+
+, final as (
+    select 
+        id as order_id
+        , user_id as customer_id
+        , status as order_status
+        , order_date
+        , row_number()
+            over (partition by user_id order by order_date, id)
+          as user_order_seq
+          
+    from orders
+)
+
+select * from final
+```
+
+Updated code for `stg_payments`
+```
+with payments as (
+    select * from {{ source('snowflake_sample', 'raw_payments') }}
+)
+
+, final as (
+    select 
+        id as payment_id 
+        , order_id
+        , amount as amount_cents
+        , {{ cents_to_dollars('amount_cents') }} as amount_dollars
+        , payment_method  
+    
+    from payments 
+)
+
+select * from final
+```
+
+4. Update code for staging CTEs to read from the staging models, and remove the import CTEs.
+
+Final code in `fc_customer_orders` 
+```
+-- import CTE
+with stg_customers as (
+    select
+        customer_id
+        , last_name
+        , first_name 
+        , full_name
+    from {{ ref('stg_customers') }}
+)
+
+, stg_orders as (
+    select
+        order_id
+        , customer_id
+        , order_status
+        , order_date
+        , user_order_seq
+    from {{ ref('stg_orders') }}    
+)
+
+, stg_payments as (
+    select 
+        payment_id
+        , payment_method
+        , order_id 
+        , amount_dollars as order_value_dollars
+
+    from {{ ref('stg_payments') }}
+)
+
+-- logical CTE
+, customer_order_history as (
+    select
+        stg_customers.customer_id
+        , stg_customers.full_name
+        , stg_customers.last_name 
+        , stg_customers.first_name
+        , min(order_date) as first_order_date
+        , min(case when stg_orders.order_status not in ('returned', 'return_pending') then order_date end) as first_non_returned_order_date
+        , max(case when stg_orders.order_status not in ('returned', 'return_pending') then order_date end) as most_recent_non_returned_order_date
+        , coalesce(max(user_order_seq), 0) as order_count
+        , coalesce(count(case when stg_orders.order_status != 'returned' then 1 end), 0) as non_returned_order_count
+        , sum(case when stg_orders.order_status not in ('returned', 'return_pending') then stg_payments.order_value_dollars else 0 end) as total_lifetime_value
+        , sum(case when stg_orders.order_status not in ('returned', 'return_pending') then stg_payments.order_value_dollars else 0 end) / nullif(count(case when stg_orders.order_status not in ('returned', 'return_pending') then 1 end), 0) as avg_non_returned_order_value
+        , array_agg(distinct stg_orders.order_id) as order_ids
+
+    from stg_orders
+
+    inner join stg_customers
+        on stg_orders.customer_id = stg_customers.customer_id
+
+    left outer join stg_payments
+        on stg_orders.order_id = stg_payments.order_id
+
+    where stg_orders.order_status not in ('pending')
+
+    group by stg_customers.customer_id, stg_customers.full_name, stg_customers.last_name, stg_customers.first_name
+)
+
+-- final CTE
+, final as (
+    select
+        stg_orders.order_id
+        , stg_orders.customer_id
+        , stg_customers.last_name 
+        , stg_customers.first_name
+        , first_order_date
+        , order_count
+        , total_lifetime_value
+        , stg_orders.order_status
+        , stg_payments.payment_id
+        , stg_payments.payment_method
+        , stg_payments.order_value_dollars
+    from stg_orders 
+    inner join stg_customers
+        on stg_orders.customer_id = stg_customers.customer_id
+
+    inner join customer_order_history
+        on stg_orders.customer_id = customer_order_history.customer_id
+
+    left outer join stg_payments
+        on stg_orders.order_id = stg_payments.order_id
+)
+
+-- final select statment
+select * from final 
+```
+
+## Step 5: Centralising transformations and splitting models - Intermediate
+
+1. Observe the DAG for the project (or slide 39 & 40 of lesson deck); the join between `stg_orders`, `stg_customers` and `stg_payments` is repeated across all `fct_` models in the project. This is an opportunity to centralise the join logic in an intermediate model.
+
+2. Create a new CTE named **orders_joined**, above the customer_order_history CTE. Move the join logic into this CTE.
+
+3. Check the code for the **customer_order_history** and **final** CTEs - the output of the **orders_joined** CTE can also be used in these 2 CTEs. Replace the references for these CTEs and clean up the code.
+
+4. Create an `intermediate` folder in your `marts` folder, and create a new model named `int_orders_joined.sql`. Copy and paste all code from the **orders_joined CTE** into this model. 
+
+5. Update the code for **orders_joined CTE** in `fct_customer_orders`, and remove unnecessary import CTEs.
+
+Code for `int_orders_joined`
+```
+with stg_customers as (
+    select
+        customer_id
+        , last_name
+        , first_name 
+        , full_name
+    from {{ ref('stg_customers') }}
+)
+
+, stg_orders as (
+    select
+        order_id
+        , customer_id
+        , order_status
+        , order_date
+        , user_order_seq
+    from {{ ref('stg_orders') }}    
+)
+
+, stg_payments as (
+    select 
+        payment_id
+        , payment_method
+        , order_id 
+        , amount_dollars as order_value_dollars
+
+    from {{ ref('stg_payments') }}
+)
+
+, final as (
+    select 
+        stg_orders.* exclude (customer_id)
+        , stg_customers.customer_id
+        , stg_customers.full_name
+        , stg_customers.last_name 
+        , stg_customers.first_name
+        , stg_payments.payment_id
+        , stg_payments.payment_method
+        , stg_payments.order_value_dollars
+
+    from stg_orders
+
+    inner join stg_customers
+        on stg_orders.customer_id = stg_customers.customer_id
+
+    left outer join stg_payments
+        on stg_orders.order_id = stg_payments.order_id
+)
+
+select * from final
+```
+
+Code for `fct_customer_orders`
+```
+-- import CTE
+with orders_joined as (
+    select * from {{ ref('int_orders_joined') }}
+)
+
+-- logical CTE
+, customer_order_history as (
+    select
+        customer_id 
+        , full_name
+        , last_name 
+        , first_name
+        , min(order_date) as first_order_date
+        , min(case when order_status not in ('returned', 'return_pending') then order_date end) as first_non_returned_order_date
+        , max(case when order_status not in ('returned', 'return_pending') then order_date end) as most_recent_non_returned_order_date
+        , coalesce(max(user_order_seq), 0) as order_count
+        , coalesce(count(case when order_status != 'returned' then 1 end), 0) as non_returned_order_count
+        , sum(case when order_status not in ('returned', 'return_pending') then order_value_dollars else 0 end) as total_lifetime_value
+        , sum(case when order_status not in ('returned', 'return_pending') then order_value_dollars else 0 end) / nullif(count(case when order_status not in ('returned', 'return_pending') then 1 end), 0) as avg_non_returned_order_value
+        , array_agg(distinct order_id) as order_ids
+
+    from orders_joined
+
+    where order_status not in ('pending')
+
+    group by customer_id, full_name, last_name, first_name
+)
+
+-- final CTE
+, final as (
+    select
+        orders_joined.order_id
+        , orders_joined.customer_id
+        , orders_joined.last_name 
+        , orders_joined.first_name
+        , customer_order_history.first_order_date
+        , customer_order_history.order_count
+        , customer_order_history.total_lifetime_value
+        , orders_joined.order_status
+        , orders_joined.payment_id
+        , orders_joined.payment_method
+        , orders_joined.order_value_dollars
+    from orders_joined 
+    
+    inner join customer_order_history
+        on orders_joined.customer_id = customer_order_history.customer_id
+)
+
+-- final select statment
+select * from final 
+```
+
+## Step 5: Centralising transformations and splitting models - Final
+
+1. Check the name and ordering of columns in the **final CTE** of `fct_customer_orders`. It should match the output of `customer_orders` in the `legacy` folder.
+
+Final code for `fct_customer_orders`
+```
+-- import CTE
+with orders_joined as (
+    select * from {{ ref('int_orders_joined') }}
+)
+
+-- logical CTE
+, customer_order_history as (
+    select
+        customer_id 
+        , full_name
+        , last_name 
+        , first_name
+        , min(order_date) as first_order_date
+        , min(case when order_status not in ('returned', 'return_pending') then order_date end) as first_non_returned_order_date
+        , max(case when order_status not in ('returned', 'return_pending') then order_date end) as most_recent_non_returned_order_date
+        , coalesce(max(user_order_seq), 0) as order_count
+        , coalesce(count(case when order_status != 'returned' then 1 end), 0) as non_returned_order_count
+        , sum(case when order_status not in ('returned', 'return_pending') then order_value_dollars else 0 end) as total_lifetime_value
+        , sum(case when order_status not in ('returned', 'return_pending') then order_value_dollars else 0 end) / nullif(count(case when order_status not in ('returned', 'return_pending') then 1 end), 0) as avg_non_returned_order_value
+        , array_agg(distinct order_id) as order_ids
+
+    from orders_joined
+
+    where order_status not in ('pending')
+
+    group by customer_id, full_name, last_name, first_name
+)
+
+-- final CTE
+, final as (
+    select
+        orders_joined.order_id
+        , orders_joined.customer_id
+        , orders_joined.last_name 
+        , orders_joined.first_name
+        , customer_order_history.first_order_date
+        , customer_order_history.order_count
+        , customer_order_history.total_lifetime_value
+        , orders_joined.order_value_dollars
+        , orders_joined.order_status
+        , orders_joined.payment_id
+        , orders_joined.payment_method
+
+    from orders_joined 
+    
+    inner join customer_order_history
+        on orders_joined.customer_id = customer_order_history.customer_id
+)
+
+-- final select statment
+select * from final 
+```
+
+## Step 6: Auditing
+
+1. Check that `audit_helper` is configured in the `packages.yml` file. Run this command to install `audit_helper`
+```
+dbt deps
+```
+
+2. Copy and paste the following code snippet into a new file in your Cloud IDE:
+```
+{% set old_etl_relation=ref('customer_orders') -%}
+
+{% set dbt_relation=ref('fct_customer_orders') %}
+
+{{ audit_helper.compare_relations(
+    a_relation=old_etl_relation,
+    b_relation=dbt_relation,
+    primary_key="order_id"
+) }}
+```
+
+3. Click on "Preview" and check the results of the `compare_relations` macro. You should see only 1 row in the output, indicating that there is a 100% match of data in both tables: 
+
+IN_A | IN_B | COUNT | PERCENT_OF_TOTAL
+true | true | 113   | 100.0
+
+4. **Optional**: Click on "Compile" and inspect the compiled SQL for the `compare_relations` macro
