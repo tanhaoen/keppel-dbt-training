@@ -50,16 +50,31 @@ dbt run --select fct_orders
 
 ## Exercise 2: Simple Orchestration
 
-1. Create an incremental job for updating `fct_orders` to run at 5:00 AM, Monday to Saturday. You can name it **Daily Incremental Run (orders)**
+1. Create an incremental job for updating `fct_orders` to run at **5:00 AM, Monday to Saturday**. You can name it **Daily Incremental Run (orders)**
 
-2. Create a full refresh job to run on Sunday at 5:00 AM. You can name it **Full Refresh (orders)**
+Use this command under "Execution Settings" while creating the job
+```
+dbt build --select +fct_orders
 
+``` 
 
-## Exercise 3: Complex Orchestration
+Check that target name is set to `prod`.
 
-Update the **Daily Incremental Run (orders)** job to run every 30 minutes, Monday to **Sunday** (not Saturday!). 
+2. Create a full refresh job to run on **Sunday at 5:00 AM**. You can name it **Full Refresh (orders)**
 
-Use cron expression for scheduling to ensure that the job **does not run between 5am to 8am**, to avoid clashing with the Full Refresh (orders) job.
+Use this command under "Execution Settings" while creating the job
+```
+dbt build --select +fct_orders --full-refresh
+
+```
+
+Check that target name is set to `prod`.
+
+## Exercise 3: Complex Orchestration with CRON expressions
+
+Update the **Daily Incremental Run (orders)** job to run **every 30 minutes (at :15 and :45), Monday to Sunday** (not Saturday!). 
+
+**Use CRON expression** for scheduling to ensure that the job **does not run between 5am to 8am**, to avoid clashing with the Full Refresh (orders) job.
 
 * [Editor for Cron tab expressions](https://crontab.guru/)
 
