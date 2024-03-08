@@ -8,18 +8,39 @@ In this lab, you will create multiple dbt Cloud jobs, and setup simple and compl
 
 ## Exercise 1: Setup
 
-Update the materialization of `fct_orders` to incremental using a config block.
+1. Update the materialization of `fct_orders` to incremental using a config block at the top of the model file. 
 
 * [Incremental Models in dbt](https://docs.getdbt.com/docs/build/incremental-models)
 
-Click "Save" and run the following command and observe the logs. You should see `create or replace transient table` in the DDL.
+```
+{{
+    config(
+        materialized='incremental',
+        unique_key='order_id'
+    )
+}}
+```
+
+2. Add an `is_incremental` block into the **orders CTE** with the following logic 
+
+```
+with orders as (
+    select * from {{ ref('stg_orders') }}
+    {% if is_incremental() %}
+        -- this filter will only be applied on an incremental run
+        where order_date > (select max(order_date) from {{ this }}) 
+    {% endif %}
+)
+```
+
+3. Click "Save" and run the following command and observe the logs. You should see `create or replace transient table` in the DDL.
 ```
 dbt run --select fct_orders --full-refresh
 ```
 
 * [full refresh](https://docs.getdbt.com/reference/resource-configs/full_refresh)
 
-Now, run this command and observe the logs. This time, you should see a different set of DDL and DML.
+Now, run this command and observe the logs. This time, you should see a different set of DDL and DML - `create or replace temporary view`, followed by a `merge into` statement.
 ```
 dbt run --select fct_orders
 ```
