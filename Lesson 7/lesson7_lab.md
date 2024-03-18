@@ -5,7 +5,7 @@ In this lab, you will be refactoring the `customer_orders` SQL file.
 ## Step 1: Migrate legacy code 1:1
 
 1. Create a `legacy` folder in your `models` directory
-2. Create a model named `customer_orders.sql` in the `legacy` folder, and paste this code into the model: 
+2. Create a model named `customer_orders.sql` in the `legacy` folder, and paste the code from **customer_orders.sql** into the model.
 
 
 ## Step 2: Implement sources
@@ -29,103 +29,113 @@ We will go with the **refactor along-side** strategy for this lab to allow for e
 
 1. Click on "Format" in the Cloud IDE to reformat the code.
 2. Create **import CTEs** for all model references.
-3. Create **logical CTEs** by creating a new CTE for all subqueries.
+3. Create **logical CTEs** by moving all subqueries into a new CTE.
 4. Wrap the remaining code in a **final CTE**, followed by the **simple select statement**.
 
 Final code:
 ```
 -- import CTE
-with orders as (
-    select * from {{ source('snowflake_sample', 'raw_orders') }}
-)
+with
+    base_orders as (select * from {{ source("snowflake_sample", "raw_orders") }}),
 
-, customers as (
-    select * from {{ source('snowflake_sample', 'raw_customers') }}
-)
+    base_customers as (select * from {{ source("snowflake_sample", "raw_customers") }}),
 
-, payments as (
-    select * from {{ source('snowflake_sample', 'raw_payments') }}
-)
+    base_payments as (select * from {{ source("snowflake_sample", "raw_payments") }}),
 
--- logical CTE
-, customers_name as (
-    select
-        *
-        , first_name || ' ' || last_name as name
-    from customers
-)
+    -- logical CTEs
+    customers as (select first_name || ' ' || last_name as name, * from base_customers),
 
-, a as (
-    select
-        *
-        , row_number()
-            over (partition by user_id order by order_date, id)
-            as user_order_seq
-    from orders    
-)
+    a as (
+        select
+            row_number() over (
+                partition by user_id order by order_date, id
+            ) as user_order_seq,
+            *
+        from base_orders
+    ),
 
-, b as (
-    select
-        *
-        , first_name || ' ' || last_name as name
-    from customers
-)
+    b as (select first_name || ' ' || last_name as name, * from base_customers),
 
-, customer_order_history as (
-    select
-        b.id as customer_id
-        , b.name as full_name
-        , b.last_name
-        , b.first_name
-        , min(order_date) as first_order_date
-        , min(case when a.status not in ('returned', 'return_pending') then order_date end) as first_non_returned_order_date
-        , max(case when a.status not in ('returned', 'return_pending') then order_date end) as most_recent_non_returned_order_date
-        , coalesce(max(user_order_seq), 0) as order_count
-        , coalesce(count(case when a.status != 'returned' then 1 end), 0) as non_returned_order_count
-        , sum(case when a.status not in ('returned', 'return_pending') then round(c.amount / 100.0, 2) else 0 end) as total_lifetime_value
-        , sum(case when a.status not in ('returned', 'return_pending') then round(c.amount / 100.0, 2) else 0 end) / nullif(count(case when a.status not in ('returned', 'return_pending') then 1 end), 0) as avg_non_returned_order_value
-        , array_agg(distinct a.id) as order_ids
+    customer_order_history as (
+        select
+            b.id as customer_id,
+            b.name as full_name,
+            b.last_name,
+            b.first_name,
+            min(order_date) as first_order_date,
+            min(
+                case
+                    when a.status not in ('returned', 'return_pending') then order_date
+                end
+            ) as first_non_returned_order_date,
+            max(
+                case
+                    when a.status not in ('returned', 'return_pending') then order_date
+                end
+            ) as most_recent_non_returned_order_date,
+            coalesce(max(user_order_seq), 0) as order_count,
+            coalesce(
+                count(case when a.status != 'returned' then 1 end), 0
+            ) as non_returned_order_count,
+            sum(
+                case
+                    when a.status not in ('returned', 'return_pending')
+                    then round(c.amount / 100.0, 2)
+                    else 0
+                end
+            ) as total_lifetime_value,
+            sum(
+                case
+                    when a.status not in ('returned', 'return_pending')
+                    then round(c.amount / 100.0, 2)
+                    else 0
+                end
+            ) / nullif(
+                count(
+                    case when a.status not in ('returned', 'return_pending') then 1 end
+                ),
+                0
+            ) as avg_non_returned_order_value,
+            array_agg(distinct a.id) as order_ids
 
-    from a
+        from a
 
-    inner join b
-        on a.user_id = b.id
+        join b on a.user_id = b.id
 
-    left outer join payments as c
-        on a.id = c.order_id
+        left outer join base_payments c on a.id = c.order_id
 
-    where a.status not in ('pending')
+        where a.status not in ('pending')
 
-    group by b.id, b.name, b.last_name, b.first_name
-)
+        group by b.id, b.name, b.last_name, b.first_name
+    ),
 
--- final CTE
-, final as (
-    select
-        orders.id as order_id
-        , orders.user_id as customer_id
-        , customers_name.last_name
-        , customers_name.first_name
-        , first_order_date
-        , order_count
-        , total_lifetime_value
-        , orders.status as order_status
-        , payments.id as payment_id
-        , payments.payment_method
-        , round(amount / 100.0, 2) as order_value_dollars
-    from orders 
-    inner join customers_name
-        on orders.user_id = customers_name.id
+    -- final CTE
+    final as (
+        select
+            orders.id as order_id,
+            orders.user_id as customer_id,
+            customers.last_name,
+            customers.first_name,
+            first_order_date,
+            order_count,
+            total_lifetime_value,
+            round(amount / 100.0, 2) as order_value_dollars,
+            orders.status as order_status,
+            payments.id as payment_id,
+            payments.payment_method
+        from base_orders as orders
 
-    inner join customer_order_history
-        on orders.user_id = customer_order_history.customer_id
+        join customers on orders.user_id = customers.id
 
-    left outer join payments
-        on orders.id = payments.order_id
-)
+        join
+            customer_order_history
+            on orders.user_id = customer_order_history.customer_id
 
--- final select statment
-select * from final 
+        left outer join base_payments payments on orders.id = payments.order_id
+    )
+
+select *
+from final
 ```
 
 
@@ -133,15 +143,15 @@ select * from final
 
 1. Identify transformations that can be moved to the staging layer for **customers**, **orders** and **payments**
 
-For **customers**:
-- `id` to `customer_id`
-- Create `full_name`
-
 For **orders**:
 - `id` to `order_id`
 - `user_id` to `customer_id`
 - `status` to `order_status`
 - Create `user_order_seq`
+
+For **customers**:
+- `id` to `customer_id`
+- Create `full_name`
 
 For **payments**:
 - `id` to `payment_id`
@@ -216,94 +226,119 @@ select * from final
 
 4. Update code for staging CTEs to read from the staging models, and remove the import CTEs.
 
-Final code in `fc_customer_orders` 
+Final code in `fct_customer_orders` 
 ```
 -- import CTE
-with stg_customers as (
-    select
-        customer_id
-        , last_name
-        , first_name 
-        , full_name
-    from {{ ref('stg_customers') }}
-)
+with
+    stg_orders as (
+        select order_id, customer_id, order_status, order_date, user_order_seq
 
-, stg_orders as (
-    select
-        order_id
-        , customer_id
-        , order_status
-        , order_date
-        , user_order_seq
-    from {{ ref('stg_orders') }}    
-)
+        from {{ ref("stg_orders") }}
+    ),
 
-, stg_payments as (
-    select 
-        payment_id
-        , payment_method
-        , order_id 
-        , amount_dollars as order_value_dollars
+    stg_customers as (
+        select customer_id, first_name, last_name, full_name
+        from {{ ref("stg_customers") }}
+    ),
 
-    from {{ ref('stg_payments') }}
-)
+    stg_payments as (
+        select payment_id, order_id, amount_dollars, payment_method
 
--- logical CTE
-, customer_order_history as (
-    select
-        stg_customers.customer_id
-        , stg_customers.full_name
-        , stg_customers.last_name 
-        , stg_customers.first_name
-        , min(order_date) as first_order_date
-        , min(case when stg_orders.order_status not in ('returned', 'return_pending') then order_date end) as first_non_returned_order_date
-        , max(case when stg_orders.order_status not in ('returned', 'return_pending') then order_date end) as most_recent_non_returned_order_date
-        , coalesce(max(user_order_seq), 0) as order_count
-        , coalesce(count(case when stg_orders.order_status != 'returned' then 1 end), 0) as non_returned_order_count
-        , sum(case when stg_orders.order_status not in ('returned', 'return_pending') then stg_payments.order_value_dollars else 0 end) as total_lifetime_value
-        , sum(case when stg_orders.order_status not in ('returned', 'return_pending') then stg_payments.order_value_dollars else 0 end) / nullif(count(case when stg_orders.order_status not in ('returned', 'return_pending') then 1 end), 0) as avg_non_returned_order_value
-        , array_agg(distinct stg_orders.order_id) as order_ids
+        from {{ ref("stg_payments") }}
+    ),
 
-    from stg_orders
+    -- logical CTEs
+    customer_order_history as (
+        select
+            stg_customers.customer_id,
+            stg_customers.full_name,
+            stg_customers.last_name,
+            stg_customers.first_name,
+            min(order_date) as first_order_date,
+            min(
+                case
+                    when stg_orders.order_status not in ('returned', 'return_pending')
+                    then order_date
+                end
+            ) as first_non_returned_order_date,
+            max(
+                case
+                    when stg_orders.order_status not in ('returned', 'return_pending')
+                    then order_date
+                end
+            ) as most_recent_non_returned_order_date,
+            coalesce(max(user_order_seq), 0) as order_count,
+            coalesce(
+                count(case when stg_orders.order_status != 'returned' then 1 end), 0
+            ) as non_returned_order_count,
+            sum(
+                case
+                    when stg_orders.order_status not in ('returned', 'return_pending')
+                    then stg_payments.amount_dollars
+                    else 0
+                end
+            ) as total_lifetime_value,
+            sum(
+                case
+                    when stg_orders.order_status not in ('returned', 'return_pending')
+                    then stg_payments.amount_dollars
+                    else 0
+                end
+            ) / nullif(
+                count(
+                    case
+                        when
+                            stg_orders.order_status
+                            not in ('returned', 'return_pending')
+                        then 1
+                    end
+                ),
+                0
+            ) as avg_non_returned_order_value,
+            array_agg(distinct stg_orders.order_id) as order_ids
 
-    inner join stg_customers
-        on stg_orders.customer_id = stg_customers.customer_id
+        from stg_orders
 
-    left outer join stg_payments
-        on stg_orders.order_id = stg_payments.order_id
+        join stg_customers on stg_orders.customer_id = stg_customers.customer_id
 
-    where stg_orders.order_status not in ('pending')
+        left outer join stg_payments on stg_orders.order_id = stg_payments.order_id
 
-    group by stg_customers.customer_id, stg_customers.full_name, stg_customers.last_name, stg_customers.first_name
-)
+        where stg_orders.order_status not in ('pending')
 
--- final CTE
-, final as (
-    select
-        stg_orders.order_id
-        , stg_orders.customer_id
-        , stg_customers.last_name 
-        , stg_customers.first_name
-        , first_order_date
-        , order_count
-        , total_lifetime_value
-        , stg_orders.order_status
-        , stg_payments.payment_id
-        , stg_payments.payment_method
-        , stg_payments.order_value_dollars
-    from stg_orders 
-    inner join stg_customers
-        on stg_orders.customer_id = stg_customers.customer_id
+        group by
+            stg_customers.customer_id,
+            stg_customers.full_name,
+            stg_customers.last_name,
+            stg_customers.first_name
+    ),
 
-    inner join customer_order_history
-        on stg_orders.customer_id = customer_order_history.customer_id
+    -- final CTE
+    final as (
+        select
+            orders.order_id,
+            orders.customer_id,
+            stg_customers.last_name,
+            stg_customers.first_name,
+            first_order_date,
+            order_count,
+            total_lifetime_value,
+            stg_payments.amount_dollars as order_value_dollars,
+            orders.order_status,
+            stg_payments.payment_id,
+            stg_payments.payment_method
+        from stg_orders as orders
 
-    left outer join stg_payments
-        on stg_orders.order_id = stg_payments.order_id
-)
+        join stg_customers on orders.customer_id = stg_customers.customer_id
 
--- final select statment
-select * from final 
+        join
+            customer_order_history
+            on orders.customer_id = customer_order_history.customer_id
+
+        left outer join stg_payments on orders.order_id = stg_payments.order_id
+    )
+
+select *
+from final
 ```
 
 ## Step 5: Centralising transformations and splitting models - Intermediate
@@ -320,110 +355,135 @@ select * from final
 
 Code for `int_orders_joined`
 ```
-with stg_customers as (
-    select
-        customer_id
-        , last_name
-        , first_name 
-        , full_name
-    from {{ ref('stg_customers') }}
-)
+-- import CTE
+with
+    stg_orders as (
+        select order_id, customer_id, order_status, order_date, user_order_seq
 
-, stg_orders as (
-    select
-        order_id
-        , customer_id
-        , order_status
-        , order_date
-        , user_order_seq
-    from {{ ref('stg_orders') }}    
-)
+        from {{ ref("stg_orders") }}
+    ),
 
-, stg_payments as (
-    select 
-        payment_id
-        , payment_method
-        , order_id 
-        , amount_dollars as order_value_dollars
+    stg_customers as (
+        select customer_id, first_name, last_name, full_name
+        from {{ ref("stg_customers") }}
+    ),
 
-    from {{ ref('stg_payments') }}
-)
+    stg_payments as (
+        select payment_id, order_id, amount_dollars, payment_method
 
-, final as (
-    select 
-        stg_orders.* exclude (customer_id)
-        , stg_customers.customer_id
-        , stg_customers.full_name
-        , stg_customers.last_name 
-        , stg_customers.first_name
-        , stg_payments.payment_id
-        , stg_payments.payment_method
-        , stg_payments.order_value_dollars
+        from {{ ref("stg_payments") }}
+    ),
 
-    from stg_orders
+    -- final CTEs
+    final as (
+        select
+            stg_customers.customer_id,
+            stg_customers.full_name,
+            stg_customers.last_name,
+            stg_customers.first_name,
+            stg_orders.order_id,
+            stg_orders.order_date,
+            stg_orders.order_status,
+            stg_orders.user_order_seq,
+            stg_payments.amount_dollars,
+            stg_payments.payment_id,
+            stg_payments.payment_method
 
-    inner join stg_customers
-        on stg_orders.customer_id = stg_customers.customer_id
+        from stg_orders
 
-    left outer join stg_payments
-        on stg_orders.order_id = stg_payments.order_id
-)
+        join stg_customers on stg_orders.customer_id = stg_customers.customer_id
 
-select * from final
+        left outer join stg_payments on stg_orders.order_id = stg_payments.order_id
+    )
+
+select *
+from final
 ```
 
 Code for `fct_customer_orders`
 ```
 -- import CTE
-with orders_joined as (
-    select * from {{ ref('int_orders_joined') }}
-)
+with
+    orders_joined as (select * from {{ ref("int_orders_joined") }}),
 
--- logical CTE
-, customer_order_history as (
-    select
-        customer_id 
-        , full_name
-        , last_name 
-        , first_name
-        , min(order_date) as first_order_date
-        , min(case when order_status not in ('returned', 'return_pending') then order_date end) as first_non_returned_order_date
-        , max(case when order_status not in ('returned', 'return_pending') then order_date end) as most_recent_non_returned_order_date
-        , coalesce(max(user_order_seq), 0) as order_count
-        , coalesce(count(case when order_status != 'returned' then 1 end), 0) as non_returned_order_count
-        , sum(case when order_status not in ('returned', 'return_pending') then order_value_dollars else 0 end) as total_lifetime_value
-        , sum(case when order_status not in ('returned', 'return_pending') then order_value_dollars else 0 end) / nullif(count(case when order_status not in ('returned', 'return_pending') then 1 end), 0) as avg_non_returned_order_value
-        , array_agg(distinct order_id) as order_ids
+    -- logical CTE
+    customer_order_history as (
+        select
+            customer_id,
+            full_name,
+            last_name,
+            first_name,
+            min(order_date) as first_order_date,
+            min(
+                case
+                    when order_status not in ('returned', 'return_pending')
+                    then order_date
+                end
+            ) as first_non_returned_order_date,
+            max(
+                case
+                    when order_status not in ('returned', 'return_pending')
+                    then order_date
+                end
+            ) as most_recent_non_returned_order_date,
+            coalesce(max(user_order_seq), 0) as order_count,
+            coalesce(
+                count(case when order_status != 'returned' then 1 end), 0
+            ) as non_returned_order_count,
+            sum(
+                case
+                    when order_status not in ('returned', 'return_pending')
+                    then amount_dollars
+                    else 0
+                end
+            ) as total_lifetime_value,
+            sum(
+                case
+                    when order_status not in ('returned', 'return_pending')
+                    then amount_dollars
+                    else 0
+                end
+            ) / nullif(
+                count(
+                    case
+                        when order_status not in ('returned', 'return_pending') then 1
+                    end
+                ),
+                0
+            ) as avg_non_returned_order_value,
+            array_agg(distinct order_id) as order_ids
 
-    from orders_joined
+        from orders_joined
 
-    where order_status not in ('pending')
+        where order_status not in ('pending')
 
-    group by customer_id, full_name, last_name, first_name
-)
+        group by customer_id, full_name, last_name, first_name
+    ),
 
--- final CTE
-, final as (
-    select
-        orders_joined.order_id
-        , orders_joined.customer_id
-        , orders_joined.last_name 
-        , orders_joined.first_name
-        , customer_order_history.first_order_date
-        , customer_order_history.order_count
-        , customer_order_history.total_lifetime_value
-        , orders_joined.order_status
-        , orders_joined.payment_id
-        , orders_joined.payment_method
-        , orders_joined.order_value_dollars
-    from orders_joined 
-    
-    inner join customer_order_history
-        on orders_joined.customer_id = customer_order_history.customer_id
-)
+    -- final CTE
+    final as (
+        select
+            orders_joined.order_id,
+            orders_joined.customer_id,
+            orders_joined.last_name,
+            orders_joined.first_name,
+            customer_order_history.first_order_date,
+            customer_order_history.order_count,
+            total_lifetime_value,
+            orders_joined.amount_dollars as order_value_dollars,
+            orders_joined.order_status,
+            orders_joined.payment_id,
+            orders_joined.payment_method
+        from orders_joined
 
--- final select statment
-select * from final 
+        join
+            customer_order_history
+            on orders_joined.customer_id = customer_order_history.customer_id
+
+    )
+
+select *
+from final
 ```
 
 ## Step 5: Centralising transformations and splitting models - Final
@@ -512,3 +572,6 @@ dbt deps
 |true | true | 113   | 100.0            |
 
 4. **Optional**: Click on "Compile" and inspect the compiled SQL for the `compare_relations` macro
+
+
+### Congratulations! You have completed this Lab successfully.
