@@ -42,7 +42,7 @@ with DAG(
         job_id=???
     )
 
-    trigger_dbt_cloud_job_run
+trigger_dbt_cloud_job_run
 ```
 
 [Documentation on DbtCloudRunJobOperator](https://airflow.apache.org/docs/apache-airflow-providers-dbt-cloud/stable/_api/airflow/providers/dbt/cloud/operators/dbt/index.html#airflow.providers.dbt.cloud.operators.dbt.DbtCloudRunJobOperatorLink)
@@ -51,7 +51,7 @@ with DAG(
 
 5. Save the changes in `test_dbt_cloud.py`, and upload it into the S3 bucket used for the training session. 
 
-6. Manually Trigger a DAG run from the Airflow UI. You should be able to click into the dbt Cloud UI by clicking on the Task in the Graph view. 
+6. Manually Trigger a DAG run from the Airflow UI. You should be able to click into the dbt Cloud UI by clicking on **Task Details** in the **Grid view.** 
 
 ## 2. Create your first DAG
 
@@ -102,7 +102,7 @@ with DAG(
     task_7 = DummyOperator(task_id="task_7")
     task_8 = DummyOperator(task_id="task_8")
 
-    # INSTANTIATE TASKS BELOW
+# INSTANTIATE TASKS BELOW
 ```
 
 5. `<your name>_test_dag_inactive` also has 4 tasks scheduled to **run every 1 minute** as well. This time, instantiate tasks 5, 6, 7 & 8 using Bitshift operators to produce the following dependencies:
@@ -148,7 +148,7 @@ with DAG(
     task_11 = DummyOperator(task_id="task_11")
     task_12 = DummyOperator(task_id="task_12")
 
-    # INSTANTIATE TASKS BELOW
+# INSTANTIATE TASKS BELOW
 ```
 
 2. Configure `dag_id` with the following format: `<your name>_test_dag_catchup`.
