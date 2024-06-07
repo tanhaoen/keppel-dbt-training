@@ -1,0 +1,11 @@
+version: 2
+
+sources:
+  - name: snowflake_sample
+    database: DBT_TRAIN_DB
+    schema: DBT_TRAIN_JAFFLE_SHOP
+
+    tables:
+      - name: RAW_ORDERS 
+      - name: RAW_PAYMENTS
+      - name: RAW_CUSTOMERS
